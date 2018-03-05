@@ -9,6 +9,9 @@ import sys
 from JamesLab.apps.base import ActionDispatcher, OptionParser
 from JamesLab.apps.slurmhead import SlrumHeader
 
+# the location of gemma executable file
+gemma = op.abspath(op.dirname(__file__))+'/../apps/gemma'
+
 def main():
     actions = (
         ('hmp2BIMBAM', 'transform hapmap format to BIMBAM format'),
@@ -101,6 +104,61 @@ def hmp2numeric(args):
         f2.write(newl)
     f1.close()
     f2.close()
+
+def genKinship(args):
+    """
+    %prog genotype.mean
+    
+    Generate centered kinship matrix file
+    """
+    p = OptionParser(GLM.__doc__)
+    p.set_slurm_opts(array=False)
+    opts, args = p.parse_args(args)
+    if len(args) == 0:
+        sys.exit(not p.print_help()) 
+    geno_mean, = args
+    # generate a fake bimbam phenotype based on genotype
+    f = open(geno_mean)
+    num_SMs = len(f.readline().split(',')[3:])
+    f1 = open('tmp.pheno', 'w')
+    for i in range(num_SMs):
+        f1.write('sm%s\t%s\n'%(i, 20))
+    f.close()
+    f1.close()
+    mean_prefix = geno_mean.replace('.mean','')
+    
+    # the location of gemma executable file
+    gemma = op.abspath(op.dirname(__file__))+'/../apps/gemma'
+
+    cmd = '%s -g %s -p %s -gk 1 -outdir . -o gemma.centered.%s' \
+        %(gemma, geno_mean, 'tmp.pheno', mean_prefix)
+    print('The kinship command running on the local node:\n%s'%cmd)
+   
+    h = SlrumHeader()
+    header = h.header%(opts.time, opts.memory, opts.prefix, opts.prefix, opts.prefix)
+    header += cmd
+    f = open('%s.kinship.slurm'%mean_prefix, 'w')
+    f.write(header)
+    f.close()
+    print('slurm file %s.kinship.slurm has been created, you can sbatch your job file.'%mean_prefix)
+
+def genPCA10(args):
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 if __name__ == '__main__':
     main()
