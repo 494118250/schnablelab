@@ -16,7 +16,10 @@ def main():
     actions = (
         ('hmp2BIMBAM', 'transform hapmap format to BIMBAM format'),
         ('hmp2numeric', 'transform hapmap format to numeric format'),
-        ('hmp2MVP', 'transform hapmap format to MVP format')
+        ('hmp2MVP', 'transform hapmap format to MVP format'),
+        ('genKinship', 'using gemma to generate centered kinship matrix'),
+        ('genPCA10', 'using tassel to generate the first 10 PCs'),
+        ('subsample', 'resort hmp file by extracting part of samples')
             )
     p = ActionDispatcher(actions)
     p.dispatch(globals())
@@ -74,7 +77,7 @@ def hmp2numeric(args):
     
     Convert hmp genotypic data to numeric datasets (*.GD and *.GM).
     """
-    p = OptionParser(hmp2BIMBAM.__doc__)
+    p = OptionParser(hmp2numeric.__doc__)
     opts, args = p.parse_args(args)
 
     if len(args) == 0:
@@ -111,7 +114,7 @@ def genKinship(args):
     
     Generate centered kinship matrix file
     """
-    p = OptionParser(GLM.__doc__)
+    p = OptionParser(genKinship.__doc__)
     p.set_slurm_opts(array=False)
     opts, args = p.parse_args(args)
     if len(args) == 0:
@@ -125,8 +128,8 @@ def genKinship(args):
         f1.write('sm%s\t%s\n'%(i, 20))
     f.close()
     f1.close()
+
     mean_prefix = geno_mean.replace('.mean','')
-    
     # the location of gemma executable file
     gemma = op.abspath(op.dirname(__file__))+'/../apps/gemma'
 
@@ -143,22 +146,72 @@ def genKinship(args):
     print('slurm file %s.kinship.slurm has been created, you can sbatch your job file.'%mean_prefix)
 
 def genPCA10(args):
+    """
+    %prog hmp
+    
+    Generate first 10 PCs
+    """
+    p = OptionParser(genPCA10.__doc__)
+    p.set_slurm_opts(array=False)
+    opts, args = p.parse_args(args)
+    if len(args) == 0:
+        sys.exit(not p.print_help())
+    hmp, = args
+    out_prefix = hmp.replace('.hmp', '')
+    cmd = 'run_pipeline.pl -Xms56g -Xmx58g -fork1 -h %s -PrincipalComponentsPlugin -ncomponents 10 -covariance true -endPlugin -export %s.PCA10 -runfork1'%(hmp, out_prefix)
+    h = SlrumHeader()
+    h.AddModule(('java/1.8', 'tassel/5.2'))
+    header = h.header%(opts.time, opts.memory, opts.prefix, opts.prefix, opts.prefix)
+    header += cmd
+    f = open('%s.PCA10.slurm'%out_prefix, 'w')
+    f.write(header)
+    f.close()
+    print('slurm file %s.PCA10.slurm has been created, you can sbatch your job file.'%out_prefix)
+
+def subsample(args):
+    """
+    %prog hmp SMs_file out_prefix
+
+    In the SMs_file, please put sample name row by row, only the first column will be read. If file had multiple columns, use space or tab as the separator.
+    """
+    import pandas as pd
+    import numpy as np
+
+    p = OptionParser(subsample.__doc__)
+    p.add_option('--header', default=False,
+        help = 'whether a head exist in your sample name file')
+    p.add_option('--filter', default=True,
+        help = 'if True, SNPs with missing rate > 0.05 and paralogous SNPs will be removed automatically')
+    opts, args = p.parse_args(args)
+
+    if len(args) == 0:
+        sys.exit(not p.print_help())
+   
+    hmp, SMs_file, out_prefix = args
+    hmp_df = pd.read_csv(hmp, delim_whitespace=True)
+    SMs_df = pd.read_csv(hmp, delim_whitespace=True) \
+        if opts.header \
+        else pd.read_csv(hmp, delim_whitespace=True, header=None)
+    SMs_df = SMs_df.dropna(axis=0)
+    SMs = SMs_df.iloc[:,0].astype('str')
+
+    hmp_header, hmp_SMs = hmp_df.columns[0:11], hmp_df.columns[11:]
+    
+    excepSMs = SMs[~SMs.isin(hmp_SMs)]
+    if len(excepSMs)>0:
+        print('could not find %s in original samples, proceed anyway.'%excepSMs)
+
+    targetSMs = SMs[SMs.isin(hmp_SMs)]
+    new_header = hmp_header.extend(targetSMs)
+    new_hmp = hmp_df[new_header]
+ 
+    #if opts.filter:
+    #    new_hmp = 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    new_hmp.to_csv('%s.hmp'%out_prefix, index=False, sep='\t')
+    
+    
 
 if __name__ == '__main__':
     main()
