@@ -168,6 +168,20 @@ def genPCA10(args):
     f.close()
     print('slurm file %s.PCA10.slurm has been created, you can sbatch your job file.'%out_prefix)
 
+def MAFandparalogous(row):
+    """
+    function to filter MAF and paralogous SNPs
+    """
+    ref, alt = row[1].split('/')
+    genos = row[11:]
+    refnum, altnum, refaltnum = (genos=='AA').sum(), (genos=='BB').sum(), (genos=='AB').sum()
+    #print(refnum, altnum, refaltnum)
+    af1, af2 = (refnum*2 + refaltnum)/(refnum + altnum + refaltnum)*2, (altnum*2 + refaltnum)/(refnum + altnum + refaltnum)*2
+    #print(af1, af2)
+    maf = True if min(af1, af2) >=0.01 else False
+    paralogous = True if refaltnum < min(refnum, altnum) else False
+    return maf and paralogous
+
 def subsample(args):
     """
     %prog hmp SMs_file out_prefix
@@ -181,7 +195,7 @@ def subsample(args):
     p.add_option('--header', default=False,
         help = 'whether a head exist in your sample name file')
     p.add_option('--filter', default=True,
-        help = 'if True, SNPs with missing rate > 0.05 and paralogous SNPs will be removed automatically')
+        help = 'if True, SNPs with maf <= 0.01 and paralogous SNPs will be removed automatically')
     opts, args = p.parse_args(args)
 
     if len(args) == 0:
@@ -203,15 +217,9 @@ def subsample(args):
 
     targetSMs = SMs[SMs.isin(hmp_SMs)]
     new_header = hmp_header.extend(targetSMs)
-    new_hmp = hmp_df[new_header]
- 
-    #if opts.filter:
-    #    new_hmp = 
-
-
+    new_hmp = hmp_df[new_header] 
+    final_hmp = new_hmp if not opts.filter else new_hmp.loc[new_hmp.apply(MAFandparalogous, axis=1)]
     new_hmp.to_csv('%s.hmp'%out_prefix, index=False, sep='\t')
-    
-    
 
 if __name__ == '__main__':
     main()
