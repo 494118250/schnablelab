@@ -6,8 +6,8 @@ Run GEMMA command or generate the coresponding slurm job file. Find details in G
 
 import os.path as op
 import sys
-from JamesLab.apps.base import ActionDispathcer, OptionParser
-from JamesLab.apps.slurmhead import SlrumHeader
+from JamesLab.apps.base import ActionDispatcher, OptionParser
+from JamesLab.apps.header import SlrumHeader
 from JamesLab.apps.natsort import natsorted
 
 # the location of gemma executable file
@@ -20,7 +20,7 @@ def main():
         # Visualization
         ('Manhattan', 'Draw the Manhanttan plot using GEMMA results'),
             )
-    p = ActionDispathcer(actions)
+    p = ActionDispatcher(actions)
     p.dispatch(globals())
 
 def GLM(args):
@@ -52,7 +52,7 @@ def GLM(args):
 
 def MLM(args):
     """
-    %prog MLM GenoPrefix Pheno Outdir
+    %prog MLM GenoPrefix('*.mean' and '*.annotation') Pheno Outdir
     RUN automated GEMMA Mixed Linear Model
     """ 
     p = OptionParser(MLM.__doc__)

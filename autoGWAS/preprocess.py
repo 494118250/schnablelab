@@ -7,7 +7,7 @@ Convert GWAS dataset to particular formats for GEMMA, GAPIT, FarmCPU, and MVP.
 import os.path as op
 import sys
 from JamesLab.apps.base import ActionDispatcher, OptionParser
-from JamesLab.apps.slurmhead import SlrumHeader
+from JamesLab.header import SlrumHeader
 
 # the location of gemma executable file
 gemma = op.abspath(op.dirname(__file__))+'/../apps/gemma'

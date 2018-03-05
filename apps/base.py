@@ -14,7 +14,7 @@ from JamesLab.apps.natsort import natsorted
 JSHELP = "JamesLab utility libraries v%s [%s]\n"%(__version__, __copyright__)
 
 
-class ActionDispathcer(object):
+class ActionDispatcher(object):
     """
     This class will be invoked
     a) when the base package is run via __main__, listing all MODULESs
@@ -172,7 +172,7 @@ def dmain(mainfile, type='action'):
                 if len(x.strip()) > 10 and x[0] != '%'][0] \
                 if pd else "no docstring found"
         actions.append((action, action_help))
-    a = ActionDispathcer(actions)
+    a = ActionDispatcher(actions)
     a.print_help()
 
         

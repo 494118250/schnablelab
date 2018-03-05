@@ -35,16 +35,17 @@ def cMLM(args):
     pheno, geno_prefix, PCA, Kinship = args
     mem = '.'.join(pheno.split('.')[0:-1])
     f1 = open('%s.cMLM.R'%mem, 'w')
+    #print(Gapit_header)
     gapit_cmd = Gapit_header%(pheno,geno_prefix,geno_prefix,PCA,Kinship,mem)
     f1.write(gapit_cmd)
     
     f2 = open('%s.cMLM.slurm'%mem, 'w')
     h = SlrumHeader()
+    h.AddModule(['R/3.3'])
     header = h.header%(opts.time, opts.memory, opts.prefix, opts.prefix, opts.prefix)
-    header.AddModule('R/3.3')
     f2.write(header)
     cmd = 'R CMD BATCH %s.cMLM.R'%mem
-    h2.write(cmd)
+    f2.write(cmd)
     f1.close()
     f2.close()
     print('R script %s.cMLM.R and slurm file %s.cMLM.slurm has been created, you can sbatch your job file.'%(mem, mem))
