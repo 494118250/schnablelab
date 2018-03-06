@@ -19,7 +19,7 @@ def main():
         ('hmp2MVP', 'transform hapmap format to MVP genotypic format'),
         ('genKinship', 'using gemma to generate centered kinship matrix'),
         ('genPCA10', 'using tassel to generate the first 10 PCs'),
-        ('subsample', 'resort hmp file by extracting part of samples')
+        ('subsampling', 'resort hmp file by extracting part of samples')
             )
     p = ActionDispatcher(actions)
     p.dispatch(globals())
@@ -206,14 +206,17 @@ def MAFandparalogous(row):
     ref, alt = row[1].split('/')
     genos = row[11:]
     refnum, altnum, refaltnum = (genos=='AA').sum(), (genos=='BB').sum(), (genos=='AB').sum()
+    totalA = float((refnum + altnum + refaltnum)*2)
     #print(refnum, altnum, refaltnum)
-    af1, af2 = (refnum*2 + refaltnum)/(refnum + altnum + refaltnum)*2, (altnum*2 + refaltnum)/(refnum + altnum + refaltnum)*2
+    af1, af2 = (refnum*2 + refaltnum)/totalA, (altnum*2 + refaltnum)/totalA
     #print(af1, af2)
     maf = True if min(af1, af2) >=0.01 else False
     paralogous = True if refaltnum < min(refnum, altnum) else False
-    return maf and paralogous
+    TF = maf and paralogous
+    #print(maf, paralogous)
+    return TF
 
-def subsample(args):
+def subsampling(args):
     """
     %prog hmp SMs_file out_prefix
 
@@ -222,7 +225,7 @@ def subsample(args):
     import pandas as pd
     import numpy as np
 
-    p = OptionParser(subsample.__doc__)
+    p = OptionParser(subsampling.__doc__)
     p.add_option('--header', default=False,
         help = 'whether a head exist in your sample name file')
     p.add_option('--filter', default=True,
@@ -250,8 +253,11 @@ def subsample(args):
     targetSMs = SMs[SMs.isin(hmp_SMs)].tolist()
     hmp_header.extend(targetSMs)
     new_hmp = hmp_df[hmp_header] 
-    final_hmp = new_hmp if not opts.filter else new_hmp.loc[new_hmp.apply(MAFandparalogous, axis=1)]
-    new_hmp.to_csv('%s.hmp'%out_prefix, index=False, sep='\t')
+    TFs = new_hmp.apply(MAFandparalogous, axis=1)
+    final_hmp = new_hmp.loc[TFs] \
+        if opts.filter \
+        else new_hmp
+    final_hmp.to_csv('%s.hmp'%out_prefix, index=False, sep='\t')
 
 if __name__ == '__main__':
     main()
