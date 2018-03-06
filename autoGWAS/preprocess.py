@@ -7,7 +7,7 @@ Convert GWAS dataset to particular formats for GEMMA, GAPIT, FarmCPU, and MVP.
 import os.path as op
 import sys
 from JamesLab.apps.base import ActionDispatcher, OptionParser
-from JamesLab.header import SlrumHeader
+from JamesLab.apps.header import SlrumHeader
 
 # the location of gemma executable file
 gemma = op.abspath(op.dirname(__file__))+'/../apps/gemma'
@@ -234,21 +234,21 @@ def subsample(args):
    
     hmp, SMs_file, out_prefix = args
     hmp_df = pd.read_csv(hmp, delim_whitespace=True)
-    SMs_df = pd.read_csv(hmp, delim_whitespace=True) \
+    SMs_df = pd.read_csv(SMs_file, delim_whitespace=True) \
         if opts.header \
-        else pd.read_csv(hmp, delim_whitespace=True, header=None)
+        else pd.read_csv(SMs_file, delim_whitespace=True, header=None)
     SMs_df = SMs_df.dropna(axis=0)
     SMs = SMs_df.iloc[:,0].astype('str')
 
-    hmp_header, hmp_SMs = hmp_df.columns[0:11], hmp_df.columns[11:]
+    hmp_header, hmp_SMs = hmp_df.columns[0:11].tolist(), hmp_df.columns[11:]
     
     excepSMs = SMs[~SMs.isin(hmp_SMs)]
     if len(excepSMs)>0:
         print('could not find %s in original samples, proceed anyway.'%excepSMs)
 
-    targetSMs = SMs[SMs.isin(hmp_SMs)]
-    new_header = hmp_header.extend(targetSMs)
-    new_hmp = hmp_df[new_header] 
+    targetSMs = SMs[SMs.isin(hmp_SMs)].tolist()
+    hmp_header.extend(targetSMs)
+    new_hmp = hmp_df[hmp_header] 
     final_hmp = new_hmp if not opts.filter else new_hmp.loc[new_hmp.apply(MAFandparalogous, axis=1)]
     new_hmp.to_csv('%s.hmp'%out_prefix, index=False, sep='\t')
 

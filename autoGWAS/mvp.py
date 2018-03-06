@@ -62,7 +62,7 @@ def MLM(args):
     p = OptionParser(MLM.__doc__)
     p.add_option('--numPCs', default=10,
         help = 'specify the number of PCs used in MLM [default: %default]')
-    p.add_option('--testing', default='permutation',choice=('permutation', 'bonferroni')
+    p.add_option('--testing', default='permutation',choice=('permutation', 'bonferroni'),
         help = 'specify the multi-teseting method [default: %default]')
     p.set_slurm_opts(array=False)
     opts, args = p.parse_args(args)
@@ -100,7 +100,7 @@ def FarmCPU(args):
     p = OptionParser(FarmCPU.__doc__)
     p.add_option('--numPCs', default=10,
         help = 'specify the number of PCs used in FarmCPU [default: %default]')
-    p.add_option('--testing', default='permutation',choice=('permutation', 'bonferroni')
+    p.add_option('--testing', default='permutation',choice=('permutation', 'bonferroni'),
         help = 'specify the multi-testing method [default: %default]')
     p.set_slurm_opts(array=False)
     opts, args = p.parse_args(args)
@@ -138,7 +138,7 @@ def Both(args):
     p = OptionParser(Both.__doc__)
     p.add_option('--numPCs', default=10,
         help = 'specify the number of PCs used in MLM and FarmCPU [default: %default]')
-    p.add_option('--testing', default='permutation',choice=('permutation', 'bonferroni')
+    p.add_option('--testing', default='permutation',choice=('permutation', 'bonferroni'),
         help = 'specify the multi-testing method [default: %default]')
     p.set_slurm_opts(array=False)
     opts, args = p.parse_args(args)
