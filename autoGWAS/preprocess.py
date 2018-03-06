@@ -19,7 +19,8 @@ def main():
         ('hmp2MVP', 'transform hapmap format to MVP genotypic format'),
         ('genKinship', 'using gemma to generate centered kinship matrix'),
         ('genPCA10', 'using tassel to generate the first 10 PCs'),
-        ('subsampling', 'resort hmp file by extracting part of samples')
+        ('subsampling', 'resort hmp file by extracting part of samples'),
+        ('LegalHmp', 'convert illegal genotypes in hmp file to legal genotypes')
             )
     p = ActionDispatcher(actions)
     p.dispatch(globals())
@@ -143,9 +144,11 @@ def genKinship(args):
     """
     %prog genotype.mean
     
-    Generate centered kinship matrix file
+    Calculate kinship matrix file
     """
     p = OptionParser(genKinship.__doc__)
+    p.add_option('--type', default = 1, choices=(1, 2),
+        help = 'specify the way to calculate the relateness, 1: centered; 2: standardized')
     p.set_slurm_opts(array=False)
     opts, args = p.parse_args(args)
     if len(args) == 0:
@@ -154,18 +157,19 @@ def genKinship(args):
     # generate a fake bimbam phenotype based on genotype
     f = open(geno_mean)
     num_SMs = len(f.readline().split(',')[3:])
-    f1 = open('tmp.pheno', 'w')
+    mean_prefix = geno_mean.replace('.mean','')
+    tmp_pheno = '%s.tmp.pheno'%mean_prefix
+    f1 = open(tmp_pheno, 'w')
     for i in range(num_SMs):
         f1.write('sm%s\t%s\n'%(i, 20))
     f.close()
     f1.close()
 
-    mean_prefix = geno_mean.replace('.mean','')
     # the location of gemma executable file
     gemma = op.abspath(op.dirname(__file__))+'/../apps/gemma'
 
-    cmd = '%s -g %s -p %s -gk 1 -outdir . -o gemma.centered.%s' \
-        %(gemma, geno_mean, 'tmp.pheno', mean_prefix)
+    cmd = '%s -g %s -p %s -gk %s -outdir . -o gemma.centered.%s' \
+        %(gemma, geno_mean, tmp_pheno, opts.type, mean_prefix)
     print('The kinship command running on the local node:\n%s'%cmd)
    
     h = SlrumHeader()
@@ -176,6 +180,37 @@ def genKinship(args):
     f.close()
     print('slurm file %s.kinship.slurm has been created, you can sbatch your job file.'%mean_prefix)
 
+def LegalGeno(row):
+    """
+    function to recover illegal genotypes
+    """
+    ref, alt = row[1].split('/')
+    ref = ref if len(ref)==1 else ref.replace(alt, '')[0]
+    alt = alt if len(alt)==1 else alt.replace(ref, '')[0]
+    genos = row[11:]
+    newgenos = row.replace('AA',ref+ref).replace('BB',alt+alt).replace('AB', ref+alt)
+    return newgenos
+
+def LegalHmp(args):
+    """
+    %prog hmp
+    
+    Recover illegal genotypes in hmp file to legal genotypes
+    """
+    import pandas as pd
+    p = OptionParser(LegalHmp.__doc__)
+    p.set_slurm_opts(array=False)
+    opts, args = p.parse_args(args)
+    if len(args) == 0:
+        sys.exit(not p.print_help())
+    hmp, = args
+
+    df = pd.read_csv(hmp, delim_whitespace=True)
+    df1 = df.apply(LegalGeno, axis=1)
+    legal_fn = hmp.replace('.hmp','.legal.hmp')
+    df1.to_csv(legal_fn, index=False, sep='\t')
+    print('Finish! check %s'%legal_fn)
+
 def genPCA10(args):
     """
     %prog hmp
@@ -183,6 +218,8 @@ def genPCA10(args):
     Generate first 10 PCs
     """
     p = OptionParser(genPCA10.__doc__)
+    p.add_option('--illegal_hmp', default=False, 
+        help = 'Specify True if your hmp is illegal.')
     p.set_slurm_opts(array=False)
     opts, args = p.parse_args(args)
     if len(args) == 0:
@@ -190,6 +227,7 @@ def genPCA10(args):
     hmp, = args
     out_prefix = hmp.replace('.hmp', '')
     cmd = 'run_pipeline.pl -Xms56g -Xmx58g -fork1 -h %s -PrincipalComponentsPlugin -ncomponents 10 -covariance true -endPlugin -export %s.PCA10 -runfork1'%(hmp, out_prefix)
+
     h = SlrumHeader()
     h.AddModule(('java/1.8', 'tassel/5.2'))
     header = h.header%(opts.time, opts.memory, opts.prefix, opts.prefix, opts.prefix)
