@@ -26,16 +26,16 @@ def main():
 
 def judge(ref, alt, genosList):
     newlist = []
-    for k in j[11:]:
+    for k in genosList:
         #if len(set(k))==1 and k[0] == ref:
         if k=='AA':
-            nums.append('0')
+            newlist.append('0')
         #elif len(set(k))==1 and k[0] == alt:
         elif k=='BB':
-            nums.append('2')
+            newlist.append('2')
         #elif len(set(k))==2 :
         elif k=='AB' :
-            nums.append('1')
+            newlist.append('1')
         else:
             print 'genotype error !'
     return newlist
