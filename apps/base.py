@@ -157,9 +157,9 @@ def splitall(path):
 
 def dmain(mainfile, type='action'):
     cwd = op.dirname(mainfile)
-    pyscripts = [x for x in glob.glob(op.join(cwd, "*", '__main__.py'))] \
+    pyscripts = [x for x in glob(op.join(cwd, "*", '__main__.py'))] \
         if type == "module" \
-        else glob.glob(op.join(cwd, "*.py"))
+        else glob(op.join(cwd, "*.py"))
     actions = []
     for ps in sorted(pyscripts):
         action = op.basename(op.dirname(ps)) \
@@ -174,6 +174,46 @@ def dmain(mainfile, type='action'):
         actions.append((action, action_help))
     a = ActionDispatcher(actions)
     a.print_help()
+
+def glob(pathname, pattern=None):
+    """
+    Wraps around glob.glob(), but return a sorted list.
+    """
+    import glob as gl
+    if pattern:
+        pathname = op.join(pathname, pattern)
+    return natsorted(gl.glob(pathname))
+
+def iglob(pathname, patterns):
+    """
+    Allow multiple file formats. This is also recursive. For example:
+
+    >>> iglob("apps", "*.py,*.pyc")
+    """
+    matches = []
+    patterns = patterns.split(",") if "," in patterns else listify(patterns)
+    for root, dirnames, filenames in os.walk(pathname):
+        matching = []
+        for pattern in patterns:
+            matching.extend(fnmatch.filter(filenames, pattern))
+        for filename in matching:
+            matches.append(op.join(root, filename))
+    return natsorted(matches)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         
 

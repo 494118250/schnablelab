@@ -244,7 +244,8 @@ def subsample(args):
     
     excepSMs = SMs[~SMs.isin(hmp_SMs)]
     if len(excepSMs)>0:
-        print('could not find %s in original samples, proceed anyway.'%excepSMs)
+        print('Warning: could not find %s in original samples, proceed anyway. \
+            You may need to edit your phenotype file after finishing'%excepSMs)
 
     targetSMs = SMs[SMs.isin(hmp_SMs)].tolist()
     hmp_header.extend(targetSMs)
