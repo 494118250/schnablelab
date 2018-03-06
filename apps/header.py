@@ -22,7 +22,7 @@ library("scatterplot3d")
 source("http://zzlab.net/GAPIT/gapit_functions.txt")
 source("http://zzlab.net/GAPIT/emma.txt")
 setwd(".")
-myY <- read.table("%s", head = TRUE)
+myY <- read.table("%s", head = TRUE) # sep is the space related separator
 myGM <- read.table("%s.GM", head = TRUE)
 myGD <- read.table("%s.GD", head = TRUE)
 myCV <- read.table("%s", head = TRUE)
@@ -57,40 +57,3 @@ class SlrumHeader():
         lml = 'module load %s \n'
         for i in sn:
             self.header += lml%i    #lml: load module line
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

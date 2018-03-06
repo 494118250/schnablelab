@@ -15,8 +15,8 @@ gemma = op.abspath(op.dirname(__file__))+'/../apps/gemma'
 def main():
     actions = (
         ('hmp2BIMBAM', 'transform hapmap format to BIMBAM format'),
-        ('hmp2numeric', 'transform hapmap format to numeric format'),
-        ('hmp2MVP', 'transform hapmap format to MVP format'),
+        ('hmp2numeric', 'transform hapmap format to numeric format(gapit and farmcpu)'),
+        ('hmp2MVP', 'transform hapmap format to MVP genotypic format'),
         ('genKinship', 'using gemma to generate centered kinship matrix'),
         ('genPCA10', 'using tassel to generate the first 10 PCs'),
         ('subsample', 'resort hmp file by extracting part of samples')
@@ -67,6 +67,37 @@ def hmp2BIMBAM(args):
         pos = j[3]
         chro = j[2]
         f3.write('%s,%s,%s\n'%(rs, pos, chro))
+    f1.close()
+    f2.close()
+    f3.close()
+
+def hmp2MVP(args):
+    """
+    %prog hmp MVP_prefix
+    
+    Convert hmp genotypic data to bimnbam datasets (*.numeric and *.map).
+    """
+    p = OptionParser(hmp2MVP.__doc__)
+    opts, args = p.parse_args(args)
+    
+    if len(args) == 0:
+        sys.exit(not p.print_help())
+    
+    hmp, mvp_pre = args
+    f1 = open(hmp)
+    f1.readline()
+    f2 = open(mvp_pre+'.numeric', 'w')
+    f3 = open(mvp_pre+'.map', 'w')
+    f3.write('SNP\tChrom\tBP\n')
+    for i in f1:
+        j = i.split()
+        rs = j[0]
+        ref, alt = j[1].split('/')[0], j[1].split('/')[1]
+        newNUMs = judge(ref, alt, j[11:])
+        newline = '\t'.join(newNUMs)+'\n'
+        f2.write(newline)
+        chro,pos = j[2],j[3]
+        f3.write('%s\t%s\t%s\n'%(rs,chro, pos))
     f1.close()
     f2.close()
     f3.close()

@@ -14,7 +14,7 @@ from JamesLab.apps.natsort import natsorted
 def main():
     actions = (
         ('cMLM', 'Perform GWAS using compressed mixed linear model'),
-        ('SUPER', 'Perform GWAS using SUPER')
+        ('SUPER', 'Perform GWAS using SUPER'),
             )
     p = ActionDispatcher(actions)
     p.dispatch(globals())
