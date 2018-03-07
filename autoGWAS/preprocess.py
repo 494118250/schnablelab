@@ -20,7 +20,8 @@ def main():
         ('genKinship', 'using gemma to generate centered kinship matrix'),
         ('genPCA10', 'using tassel to generate the first 10 PCs'),
         ('subsampling', 'resort hmp file by extracting part of samples'),
-        ('LegalHmp', 'convert illegal genotypes in hmp file to legal genotypes')
+        ('LegalHmp', 'convert illegal genotypes in hmp file to legal genotypes'),
+        ('SortHmp', 'Sort hmp position in wired tassle way')
             )
     p = ActionDispatcher(actions)
     p.dispatch(globals())
@@ -211,15 +212,32 @@ def LegalHmp(args):
     df1.to_csv(legal_fn, index=False, sep='\t')
     print('Finish! check %s'%legal_fn)
 
+def SortHmp(args):
+    """
+    %prog hmp
+
+    Sort hmp in wired TASSEL way...
+    """
+    p = OptionParser(SortHmp.__doc__)
+    p.set_slurm_opts(array=False)
+    opts, args = p.parse_args(args)
+    if len(args) == 0:
+        sys.exit(not p.print_help())
+    hmp, = args
+    prefix = hmp.replace('.hmp','')
+    cmd = 'run_pipeline.pl -SortGenotypeFilePlugin -inputFile %s -outputFile %s -fileType Hapmap'%(hmp, prefix)
+    call(cmd, shell=True)
+    cmd1 = 'mv %s %s'%(prefix+'.hmp.txt', prefix+'.hmp')
+    call(cmd1, shell=True)
+
+
 def genPCA10(args):
     """
     %prog hmp
     
-    Generate first 10 PCs
+    Generate first 10 PCs using tassel
     """
     p = OptionParser(genPCA10.__doc__)
-    p.add_option('--illegal_hmp', default=False, 
-        help = 'Specify True if your hmp is illegal.')
     p.set_slurm_opts(array=False)
     opts, args = p.parse_args(args)
     if len(args) == 0:
