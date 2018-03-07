@@ -11,6 +11,7 @@ import sys
 from JamesLab.apps.base import ActionDispatcher, OptionParser, glob,iglob
 from JamesLab.apps.natsort import natsorted
 from subprocess import call
+from subprocess import Popen
 
 def main():
     actions = (
@@ -59,11 +60,29 @@ def submit(args):
         else:
             print 'jobs exceed the limit'
 
-def quickjob(args):
+def cancel():
     """
     %prog
+    
+    Cancel jobs on HCC
     """
-def cancel(args):
+    myjobs = subprocess.Popen('squeue -u cmiao', shell = True, stdout=subprocess.PIPE).communicate()[0]
+
+    jobs = []
+    for i in myjobs.split('\n'):
+    j = i.strip().split()
+    if len(j) == 8 and '0:00' in j:
+        jobs.append(j[0])
+    myorder = raw_input("are you sure to cancel all %s the pending jobs?(yes/no)"%len(jobs))
+    if myorder == 'yes':
+        for k in jobs:
+            subprocess.call('scancel %s'%k, shell=True)
+    elif myorder == 'no':
+        print 'OK'
+    else:
+        print 'Please choose yes or no' 
+
+def quickjob(args):
     """
     %prog
     """
