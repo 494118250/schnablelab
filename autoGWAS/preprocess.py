@@ -6,8 +6,11 @@ Convert GWAS dataset to particular formats for GEMMA, GAPIT, FarmCPU, and MVP.
 
 import os.path as op
 import sys
+import pandas as pd
+import numpy as np
 from JamesLab.apps.base import ActionDispatcher, OptionParser
 from JamesLab.apps.header import SlrumHeader
+from subprocess import call
 
 # the location of gemma executable file
 gemma = op.abspath(op.dirname(__file__))+'/../apps/gemma'
@@ -21,7 +24,8 @@ def main():
         ('genPCA10', 'using tassel to generate the first 10 PCs'),
         ('subsampling', 'resort hmp file by extracting part of samples'),
         ('LegalHmp', 'convert illegal genotypes in hmp file to legal genotypes'),
-        ('SortHmp', 'Sort hmp position in wired tassle way')
+        ('SortHmp', 'Sort hmp position in wired tassle way'),
+        ('reorgnzTasselPCA', 'reorganize PCA results from TASSEL so it can be used in other software'),
             )
     p = ActionDispatcher(actions)
     p.dispatch(globals())
@@ -198,7 +202,6 @@ def LegalHmp(args):
     
     Recover illegal genotypes in hmp file to legal genotypes
     """
-    import pandas as pd
     p = OptionParser(LegalHmp.__doc__)
     p.set_slurm_opts(array=False)
     opts, args = p.parse_args(args)
@@ -225,10 +228,19 @@ def SortHmp(args):
         sys.exit(not p.print_help())
     hmp, = args
     prefix = hmp.replace('.hmp','')
-    cmd = 'run_pipeline.pl -SortGenotypeFilePlugin -inputFile %s -outputFile %s -fileType Hapmap'%(hmp, prefix)
-    call(cmd, shell=True)
-    cmd1 = 'mv %s %s'%(prefix+'.hmp.txt', prefix+'.hmp')
-    call(cmd1, shell=True)
+    out_prefix = hmp.replace('.hmp','')+'.sorted'
+    cmd = 'run_pipeline.pl -Xms16g -Xmx18g -SortGenotypeFilePlugin -inputFile %s -outputFile %s -fileType Hapmap\n'%(hmp, out_prefix)
+    cmd1 = 'mv %s %s'%(out_prefix+'.hmp.txt', out_prefix+'.hmp')
+
+    h = SlrumHeader()
+    h.AddModule(('java/1.8', 'tassel/5.2'))
+    header = h.header%(opts.time, opts.memory, opts.prefix, opts.prefix, opts.prefix)
+    header += cmd
+    header += cmd1
+    f = open('%s.Sort.slurm'%prefix, 'w')
+    f.write(header)
+    f.close()
+    print('slurm file %s.Sort.slurm has been created, you can sbatch your job file.'%prefix)
 
 
 def genPCA10(args):
@@ -244,7 +256,7 @@ def genPCA10(args):
         sys.exit(not p.print_help())
     hmp, = args
     out_prefix = hmp.replace('.hmp', '')
-    cmd = 'run_pipeline.pl -Xms56g -Xmx58g -fork1 -h %s -PrincipalComponentsPlugin -ncomponents 10 -covariance true -endPlugin -export %s.PCA10 -runfork1'%(hmp, out_prefix)
+    cmd = 'run_pipeline.pl -Xms56g -Xmx58g -fork1 -h %s -PrincipalComponentsPlugin -ncomponents 10 -covariance true -endPlugin -export 10PC.%s -runfork1'%(hmp, out_prefix)
 
     h = SlrumHeader()
     h.AddModule(('java/1.8', 'tassel/5.2'))
@@ -254,6 +266,29 @@ def genPCA10(args):
     f.write(header)
     f.close()
     print('slurm file %s.PCA10.slurm has been created, you can sbatch your job file.'%out_prefix)
+
+def reorgnzTasselPCA(args):
+    """
+    %prog tasselPCA1
+
+    Reorganize PCA result from TASSEL so it can be used in other software.
+    There are three different PC formats: 
+    gapit(header and 1st taxa column), farmcpu(only header), mvp/gemma(no header, no 1st taxa column)
+    """
+    p = OptionParser(reorgnzTasselPCA.__doc__)
+    opts, args = p.parse_args(args)
+    if len(args) == 0:
+        sys.exit(not p.print_help())
+    pc1, = args
+    df = pd.read_csv(pc1, delim_whitespace=True, header=2)
+    df1 = df[df.columns[1:]]
+    prefix = '.'.join(pc1.split('.')[0:2])
+    gapit_pca, farm_pca, gemma_pca = prefix+'.gapit', prefix+'.farmcpu',prefix+'.gemmaMVP'
+    df.to_csv(gapit_pca, sep='\t', index=False)
+    df1.to_csv(farm_pca, sep='\t', index=False)
+    df1.to_csv(gemma_pca, sep='\t', index=False, header=False)
+    print('finished! %s, %s, %s have been generated.'%(gapit_pca,farm_pca,gemma_pca))
+    
 
 def MAFandparalogous(row):
     """
@@ -278,9 +313,6 @@ def subsampling(args):
 
     In the SMs_file, please put sample name row by row, only the first column will be read. If file had multiple columns, use space or tab as the separator.
     """
-    import pandas as pd
-    import numpy as np
-
     p = OptionParser(subsampling.__doc__)
     p.add_option('--header', default=False,
         help = 'whether a head exist in your sample name file')
