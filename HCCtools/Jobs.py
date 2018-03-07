@@ -70,9 +70,9 @@ def cancel():
 
     jobs = []
     for i in myjobs.split('\n'):
-    j = i.strip().split()
-    if len(j) == 8 and '0:00' in j:
-        jobs.append(j[0])
+        j = i.strip().split()
+        if len(j) == 8 and '0:00' in j:
+            jobs.append(j[0])
     myorder = raw_input("are you sure to cancel all %s the pending jobs?(yes/no)"%len(jobs))
     if myorder == 'yes':
         for k in jobs:
