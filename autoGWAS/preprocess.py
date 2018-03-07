@@ -26,6 +26,7 @@ def main():
         ('LegalHmp', 'convert illegal genotypes in hmp file to legal genotypes'),
         ('SortHmp', 'Sort hmp position in wired tassle way'),
         ('reorgnzTasselPCA', 'reorganize PCA results from TASSEL so it can be used in other software'),
+        ('genGemmaPheno', 'reorganize normal phenotype format to GEMMA'),
             )
     p = ActionDispatcher(actions)
     p.dispatch(globals())
@@ -289,6 +290,29 @@ def reorgnzTasselPCA(args):
     df1.to_csv(gemma_pca, sep='\t', index=False, header=False)
     print('finished! %s, %s, %s have been generated.'%(gapit_pca,farm_pca,gemma_pca))
     
+def genGemmaPheno(args):
+    """
+    %prog normalPheno
+
+    Change the phenotype format so that can be fed to GEMMA
+    """
+    p = OptionParser(genGemmaPheno.__doc__)
+    p.add_option('--header', default=True,
+        help = 'whether a header exist in your normal phenotype file')
+    p.add_option('--sep', default='\t', choices=('\t', ','),
+        help = 'specify the separator in your normal phenotype file')
+    opts, args = p.parse_args(args)
+    if len(args) == 0:
+        sys.exit(not p.print_help())
+    normalPheno, = args
+    df = pd.read_csv(normalPheno, sep=opts.sep) \
+        if opts.header==True \
+        else pd.read_csv(normalPheno, sep=opts.sep, header=None)
+    output = 'gemma.'+normalPheno
+    df.iloc[:,1].to_csv(output, index=False, header=False)
+    print('Finished! %s has been generated.'%output)
+
+
 
 def MAFandparalogous(row):
     """
@@ -315,7 +339,7 @@ def subsampling(args):
     """
     p = OptionParser(subsampling.__doc__)
     p.add_option('--header', default=False,
-        help = 'whether a head exist in your sample name file')
+        help = 'whether a header exist in your sample name file')
     p.add_option('--filter', default=True,
         help = 'if True, SNPs with maf <= 0.01 and paralogous SNPs will be removed automatically')
     opts, args = p.parse_args(args)
