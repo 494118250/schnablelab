@@ -67,13 +67,13 @@ def MLM(args):
         sys.exit(not p.print_help())
     GenoPrefix, Pheno, Outdir = args
     meanG, annoG = GenoPrefix+'.mean', GenoPrefix+'.annotation'
-    outprefix = Pheno.split('.')[0]
+    outprefix = '.'.join(Pheno.split('.')[0:2])
     cmd = '%s -g %s -p %s -a %s -lmm 4 -outdir %s -o %s' \
         %(gemma, meanG, Pheno, annoG, Outdir, outprefix)
     if opts.kinship:
         cmd += ' -k %s'%opts.kinship
     if opts.pca:
-        cmd += ' -c %s'%opts.kinship
+        cmd += ' -c %s'%opts.pca
     print('The command running on the local node:\n%s'%cmd)
 
     h = SlrumHeader()
