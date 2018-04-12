@@ -109,6 +109,8 @@ def Manhattan(args):
         help = 'choose the pvalue cutoff')
     p.add_option('--multipletest', default='bonferroni', choices=('bonferroni', 'adjust-bonferroni', 'fdr'),
         help = 'choose the type of multiple test')
+    p.add_option('--ylim', type = 'int',
+        help = 'specify the ylim of the figure')
     opts, args = p.parse_args(args)
 
     if len(args) == 0:
@@ -148,7 +150,9 @@ def Manhattan(args):
         ax.axhline(cutoff)
         ax.set_xticks(x_labels_pos)
         ax.set_xticklabels(x_labels, fontsize='14',  fontweight='bold')
-        ylim = np.ceil(df[typePvalue].max())+ .5
+        ylim = opts.ylim \
+            if opts.ylim \
+            else np.ceil(df[typePvalue].max())+ .5
         ax.set_yticks(np.arange(0,ylim))
         ylabels = [str(int(i)) for i in np.arange(0,ylim)]
         ax.set_yticklabels(ylabels, fontsize='14',  fontweight='bold')
@@ -158,7 +162,7 @@ def Manhattan(args):
         ax.set_xlabel('Chromosome', fontsize=20, fontweight='bold')
         ax.set_ylabel(r'$\mathrm{-log_{10}(Pvalue)}$', fontsize=18, fontweight='bold')
         ax.set_title(title,  fontsize = 25, fontweight='bold')
-        plt.savefig('Mantattan.%s.%s.png'%(GWASresult.split('.')[0], typePvalue.split('10')[-1]))
+        plt.savefig('Mantattan.%s.%s.png'%(title, typePvalue.split('10')[-1]))
 
 
 if __name__ == "__main__":

@@ -34,7 +34,7 @@ def submit(args):
     p.add_option("--partition", default='jclarke', choices=('batch', 'jclarke'),
                 help = "choose which partition you are going to submit [default: %default]")
     p.add_option("--range", default='all', 
-                 help="exp: '0-10','all'. Values are included")
+                 help="exp: '1-10', '11-20', 'all'. 1-based coordinate")
     opts, args = p.parse_args(args)
     if len(args) != 1:
         sys.exit(not p.print_help())
@@ -50,13 +50,13 @@ def submit(args):
           print(i)
           call(i, shell=True)
     else:
-        start, end = int(opts.range.split('-')[0]), int(jobrange.split('-')[1])
-        if end <= len(all_jobs):
-            for i in all_jobs[start-1 : end]:
+        start, end = int(opts.range.split('-')[0]), int(opts.range.split('-')[1])
+        if end <= len(alljobs):
+            for i in alljobs[start-1 : end]:
                 print(i)
                 call(i, shell=True)
             print '%s of total %s were submitted. [%s to %s] this time.' \
-                %(len(all_jobs[start-1 : end]), len(all_jobs), start, end)
+                %(len(alljobs[start-1 : end]), len(alljobs), start, end)
         else:
             print 'jobs exceed the limit'
 

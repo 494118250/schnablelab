@@ -25,7 +25,7 @@ def main():
         ('subsampling', 'resort hmp file by extracting part of samples'),
         ('LegalHmp', 'convert illegal genotypes in hmp file to legal genotypes'),
         ('SortHmp', 'Sort hmp position in wired tassle way'),
-        ('reorgnzTasselPCA', 'reorganize PCA results from TASSEL so it can be used in other software'),
+        ('reognzTasselPCA', 'reorganize PCA results from TASSEL so it can be used in other software'),
         ('genGemmaPheno', 'reorganize normal phenotype format to GEMMA'),
             )
     p = ActionDispatcher(actions)
