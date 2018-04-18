@@ -7,7 +7,7 @@ Run GEMMA command or generate the coresponding slurm job file. Find details in G
 import os.path as op
 import sys
 from JamesLab.apps.base import ActionDispatcher, OptionParser
-from JamesLab.apps.header import SlrumHeader
+from JamesLab.apps.header import Slrum_header
 from JamesLab.apps.natsort import natsorted
 
 # the location of gemma executable file
@@ -41,8 +41,8 @@ def GLM(args):
         %(gemma, meanG, Pheno, annoG, Outdir, outprefix)
     print('The command running on the local node:\n%s'%cmd)
 
-    h = SlrumHeader()
-    header = h.header%(opts.time, opts.memory, opts.prefix, opts.prefix, opts.prefix)
+    h = Slrum_header
+    header = h%(opts.time, opts.memory, opts.prefix, opts.prefix, opts.prefix)
     header += cmd
     f = open('%s.glm.slurm'%outprefix, 'w')
     f.write(header)
@@ -76,8 +76,8 @@ def MLM(args):
         cmd += ' -c %s'%opts.pca
     print('The command running on the local node:\n%s'%cmd)
 
-    h = SlrumHeader()
-    header = h.header%(opts.time, opts.memory, opts.prefix, opts.prefix, opts.prefix)
+    h = Slrum_header
+    header = h%(opts.time, opts.memory, opts.prefix, opts.prefix, opts.prefix)
     header += cmd
     f = open('%s.mlm.slurm'%outprefix, 'w')
     f.write(header)

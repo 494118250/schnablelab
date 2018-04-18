@@ -7,7 +7,7 @@ Generate the R script file and the slurm job file for performing GAPIT. Find mor
 import os.path as op
 import sys
 from JamesLab.apps.base import ActionDispatcher, OptionParser
-from JamesLab.apps.header import SlrumHeader
+from JamesLab.apps.header import Slrum_header
 from JamesLab.apps.header import Gapit_header
 from JamesLab.apps.natsort import natsorted
 
@@ -40,9 +40,9 @@ def cMLM(args):
     f1.write(gapit_cmd)
     
     f2 = open('%s.cMLM.slurm'%mem, 'w')
-    h = SlrumHeader()
-    h.AddModule(['R/3.3'])
-    header = h.header%(opts.time, opts.memory, opts.prefix, opts.prefix, opts.prefix)
+    h = Slrum_header
+    h += 'module load R/3.3'
+    header = h%(opts.time, opts.memory, opts.prefix, opts.prefix, opts.prefix)
     f2.write(header)
     cmd = 'R CMD BATCH %s.cMLM.R'%mem
     f2.write(cmd)

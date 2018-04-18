@@ -11,7 +11,7 @@ from JamesLab.apps.natsort import natsorted
 from subprocess import call
 from subprocess import Popen
 import re
-from JamesLab.apps.header import SlrumHeader
+from JamesLab.apps.header import Slrum_header
 
 def main():
     actions = (
@@ -51,14 +51,15 @@ def crop(args):
         if zoom ==1 \
         else 'magick %s -crop 900x1443+850+217 %s'%(inputImg, out_img)
 
-    h = SlrumHeader()
-    h.header += 'module load anaconda\nsource activate MCY\n'
-    header = h.header%(opts.time, opts.memory, opts.prefix, opts.prefix, opts.prefix)
+    h = Slrum_header
+    h += 'module load anaconda\nsource activate MCY\n'
+    header = h%(opts.time, opts.memory, opts.prefix, opts.prefix, opts.prefix)
     header += cmd
-    f = open('%s.crop.slurm'%prefix, 'w')
+    slurm = '%s.crop.slurm'%prefix
+    f = open(slurm, 'w')
     f.write(header)
     f.close()
-    print('slurm file has been created, you can sbatch your job file.')
+    print('slurm file %s has been created'%slurm)
 
 def downsize(args):
    """

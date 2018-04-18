@@ -69,6 +69,10 @@ natsort will recursively descend into lists of lists so you can sort by the subl
 
 
 import re
+try:
+    basestring
+except NameError:
+    basestring = str
 
 
 # The regex that locates floats

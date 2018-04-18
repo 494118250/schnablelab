@@ -12,6 +12,19 @@ Slurm_header = '''#!/bin/sh
 
 '''
 
+Slurm_gpu_header = '''#!/bin/sh
+#SBATCH --time=130:00:00          # Run time in hh:mm:ss
+#SBATCH --mem-per-cpu=10000       # Maximum memory required per CPU (in megabytes)
+#SBATCH --job-name=%s
+#SBATCH --error=./%s.err
+#SBATCH --output=./%s.out
+#SBATCH --partition=gpu
+#SBATCH --nodes=1
+#SBATCH --gres=gpu:1
+#SBATCH --constraint=gpu_%s
+
+'''
+
 Gapit_header = '''library(multtest)
 library(gplots)
 library(genetics)
@@ -45,15 +58,3 @@ myCV <- read.table("%s", head = TRUE)
 #Step 2: Run FarmCPU
 myFarmCPU <- FarmCPU(Y=myY, GD=myGD, GM=myGM, CV=myCV, method.bin="optimum", bin.size=c(5e5,5e6,5e7), bin.selection=seq(10,100,10), threshold.output=1, memo='%s')
 '''
-
-class SlrumHeader():
-    """
-    generate slurm header
-    """
-    def __init__(self):
-        self.header = Slurm_header
-
-    def AddModule(self, sn): # sn represent software name
-        lml = 'module load %s \n'
-        for i in sn:
-            self.header += lml%i    #lml: load module line

@@ -7,7 +7,7 @@ Generate the R script file and the slurm job file for performing FarmCPU. Find m
 import os.path as op
 import sys
 from JamesLab.apps.base import ActionDispatcher, OptionParser
-from JamesLab.apps.header import SlrumHeader
+from JamesLab.apps.header import Slurm_header
 from JamesLab.apps.header import FarmCPU_header
 from JamesLab.apps.natsort import natsorted
 
@@ -37,9 +37,9 @@ def farmcpu(args):
     f1.write(farmcpu_cmd)
 
     f2 = open('%s.farmcpu.slurm'%mem, 'w')
-    h = SlrumHeader()
-    h.AddModule(['R/3.3'])
-    header = h.header%(opts.time, opts.memory, opts.prefix, opts.prefix, opts.prefix)
+    h = Slurm_header
+    h += 'module load R/3.3\n'
+    header = h%(opts.time, opts.memory, opts.prefix, opts.prefix, opts.prefix)
     f2.write(header)
     cmd = 'R CMD BATCH %s.FarmCPU.R'%mem
     f2.write(cmd)

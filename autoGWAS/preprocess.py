@@ -9,7 +9,7 @@ import sys
 import pandas as pd
 import numpy as np
 from JamesLab.apps.base import ActionDispatcher, OptionParser
-from JamesLab.apps.header import SlrumHeader
+from JamesLab.apps.header import Slrum_header
 from subprocess import call
 
 # the location of gemma executable file
@@ -178,8 +178,8 @@ def genKinship(args):
         %(gemma, geno_mean, tmp_pheno, opts.type, mean_prefix)
     print('The kinship command running on the local node:\n%s'%cmd)
    
-    h = SlrumHeader()
-    header = h.header%(opts.time, opts.memory, opts.prefix, opts.prefix, opts.prefix)
+    h = Slrum_header
+    header = h%(opts.time, opts.memory, opts.prefix, opts.prefix, opts.prefix)
     header += cmd
     f = open('%s.kinship.slurm'%mean_prefix, 'w')
     f.write(header)
@@ -233,9 +233,10 @@ def SortHmp(args):
     cmd = 'run_pipeline.pl -Xms16g -Xmx18g -SortGenotypeFilePlugin -inputFile %s -outputFile %s -fileType Hapmap\n'%(hmp, out_prefix)
     cmd1 = 'mv %s %s'%(out_prefix+'.hmp.txt', out_prefix+'.hmp')
 
-    h = SlrumHeader()
-    h.AddModule(('java/1.8', 'tassel/5.2'))
-    header = h.header%(opts.time, opts.memory, opts.prefix, opts.prefix, opts.prefix)
+    h = Slrum_header
+    h += 'module load java/1.8\n'
+    h += 'module load  tassel/5.2\n'
+    header = h%(opts.time, opts.memory, opts.prefix, opts.prefix, opts.prefix)
     header += cmd
     header += cmd1
     f = open('%s.Sort.slurm'%prefix, 'w')
@@ -259,9 +260,10 @@ def genPCA10(args):
     out_prefix = hmp.replace('.hmp', '')
     cmd = 'run_pipeline.pl -Xms56g -Xmx58g -fork1 -h %s -PrincipalComponentsPlugin -ncomponents 10 -covariance true -endPlugin -export 10PC.%s -runfork1'%(hmp, out_prefix)
 
-    h = SlrumHeader()
-    h.AddModule(('java/1.8', 'tassel/5.2'))
-    header = h.header%(opts.time, opts.memory, opts.prefix, opts.prefix, opts.prefix)
+    h = Slrum_header
+    h += 'module load java/1.8\n'
+    h += 'module load tassel/5.2\n'
+    header = h%(opts.time, opts.memory, opts.prefix, opts.prefix, opts.prefix)
     header += cmd
     f = open('%s.PCA10.slurm'%out_prefix, 'w')
     f.write(header)

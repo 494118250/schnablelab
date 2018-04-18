@@ -13,6 +13,10 @@ from JamesLab.apps.natsort import natsorted
 
 JSHELP = "JamesLab utility libraries v%s [%s]\n"%(__version__, __copyright__)
 
+try:
+    basestring
+except NameError:
+    basestring = str
 
 class ActionDispatcher(object):
     """
@@ -128,8 +132,8 @@ class OptionParser(OptionP):
         group.add_option('-p', dest='prefix',default='myjob',
                  help='prefix of job name and log file')
         if array:
-            group.add_option('-s', dest='module',default=None,
-                 help='module name need to load before performing the job')
+            group.add_option('-g', dest='gpu',default='p100', choices=('p100', 'k20', 'k40'),
+                 help='specify the gpu type')
         self.add_option_group(group)
 
 
