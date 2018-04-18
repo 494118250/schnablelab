@@ -9,6 +9,8 @@ from JamesLab.apps.base import ActionDispatcher, OptionParser
 from JamesLab.apps.header import Slurm_gpu_header
 from JamesLab.apps.natsort import natsorted
 
+vgg_py = op.abspath(op.dirname(__file__))+'/VGG.py'    
+
 def main():
     actions = (
         ('vgg', 'run vgg model'),
@@ -31,12 +33,8 @@ def vgg(args):
         sys.exit(not p.print_help())
     train_dir, val_dir, model_name = args
     
-    vgg_py = op.abspath(op.dirname(__file__))+'/VGG.py'    
-
     vgg_cmd = 'python %s %s %s %s %s'%(vgg_py, train_dir, val_dir, opts.lr, model_name) 
-    
     SlurmHeader = Slurm_gpu_header%(opts.prefix,opts.prefix,opts.prefix,opts.gpu)
-
     SlurmHeader += 'module load anaconda\n'
     SlurmHeader += 'source activate MCY\n'
     SlurmHeader += vgg_cmd
@@ -45,6 +43,13 @@ def vgg(args):
     f.close()
     print('slurm file %s.vgg.slurm has been created, you can sbatch your job file.'\
 %opts.prefix)
-     
+    
+def inception():
+    pass
+
+def resnet():
+    pass
+
+ 
 if __name__ == "__main__":
     main()

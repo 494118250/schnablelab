@@ -6,7 +6,7 @@ import numpy as np
 import pickle
 from keras.preprocessing.image import load_img
 from keras.preprocessing.image import img_to_array
-from keras.preprocessing.image import ImageDateGenerator
+from keras.preprocessing.image import ImageDataGenerator
 from keras.models import Sequential
 from keras.layers import Conv2D, MaxPooling2D, Dropout, Flatten, Dense
 from keras.callbacks import EarlyStopping
@@ -18,8 +18,8 @@ def preprocess(img_dir):
     imgs = []
     all_imgs = glob(img_dir + '/*/*png')
     for i in all_imgs:
-        img = image.load_img(i, target_size = ts)
-        img_array = image.img_to_array(img)
+        img = load_img(i, target_size = ts)
+        img_array = img_to_array(img)
         imgs.append(img_array)
     imgs = np.array(imgs)
     print('the demension of image array: %s'%(imgs.shape)) 
@@ -42,7 +42,7 @@ def train(train_dir, val_dir, lr, model_name):
       target_size=ts,
       batch_size=50, 
       shuffle=True,
-      save_to_dir = 'augmented_train_imgs',
+      save_to_dir = '%s_augmented_train_imgs'%model_name,
       save_prefix = 'aug_train'
       ) 
 
@@ -59,7 +59,7 @@ def train(train_dir, val_dir, lr, model_name):
       target_size=ts,
       batch_size=50, 
       shuffle=True,
-      save_to_dir = 'augmented_val_imgs',
+      save_to_dir = '%s_augmented_val_imgs'%model_name,
       save_prefix = 'aug_val'
       ) 
 
