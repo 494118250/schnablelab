@@ -22,10 +22,10 @@ def preprocess(img_dir):
         img_array = img_to_array(img)
         imgs.append(img_array)
     imgs = np.array(imgs)
-    print('the demension of image array: %s'%(imgs.shape)) 
+    print('the demension of image array: %s'%(','.join([str(i) for i in imgs.shape]))) 
     return imgs
 
-def train(train_dir, val_dir, lr, model_name):
+def train(train_dir, val_dir, lr, epc, model_name):
     train_imgs =  preprocess(train_dir)
     val_imgs =  preprocess(val_dir)
 
@@ -40,10 +40,10 @@ def train(train_dir, val_dir, lr, model_name):
     train_generator = train_datagen.flow_from_directory(
       train_dir,
       target_size=ts,
-      batch_size=50, 
-      shuffle=True,
-      save_to_dir = '%s_augmented_train_imgs'%model_name,
-      save_prefix = 'aug_train'
+      batch_size=30, 
+      shuffle=True
+      #save_to_dir = '%s_augmented_train_imgs'%model_name,
+      #save_prefix = 'aug_train'
       ) 
 
     val_datagen =  ImageDataGenerator(
@@ -57,10 +57,10 @@ def train(train_dir, val_dir, lr, model_name):
     val_generator = val_datagen.flow_from_directory(
       val_dir,
       target_size=ts,
-      batch_size=50, 
-      shuffle=True,
-      save_to_dir = '%s_augmented_val_imgs'%model_name,
-      save_prefix = 'aug_val'
+      batch_size=30, 
+      shuffle=True
+      #save_to_dir = '%s_augmented_val_imgs'%model_name,
+      #save_prefix = 'aug_val'
       ) 
 
     model = Sequential([
@@ -99,23 +99,23 @@ def train(train_dir, val_dir, lr, model_name):
       optimizer=Adam(lr=float(lr)), 
       metrics=['accuracy']
       )
-    early_stop_monitor = EarlyStopping(patience=3)
+
     model_history = model.fit_generator(
       train_generator, 
-      epochs=50, 
-      validation_data=val_generator,
-      callbacks=[early_stop_monitor]
+      epochs=int(epc), 
+      validation_data=val_generator
       )
+
     model.save('%s.h5'%model_name)
     print('model has been saved to %s.h5'%model_name)
 
-    pickle.dump( favorite_color, open( "save.p", "wb" ) )
+    pickle.dump(model_history.history, open( "%s_history.p"%model_name, "wb" ) )
     print("model history as a dictionary has been saved pickle \
 object %s_history.p. You can load the dict back using \
 pickle.load(open('save.p', 'rb'))"%model_name)
 
 import sys
-if len(sys.argv)==5:
+if len(sys.argv)==6:
     train(*sys.argv[1:])
 else:
-    print('train_dir', 'val_dir', 'lr', 'model_name')
+    print('train_dir', 'val_dir', 'lr', 'epoches', 'model_name')

@@ -27,13 +27,15 @@ def vgg(args):
     p = OptionParser(vgg.__doc__)
     p.add_option('--lr', default=1e-5,
         help = 'specify the learing rate')
+    p.add_option('--epc', default=30,
+        help = 'specify epoches')
     p.set_slurm_opts(array=True)
     opts, args = p.parse_args(args)
     if len(args) == 0:
         sys.exit(not p.print_help())
     train_dir, val_dir, model_name = args
     
-    vgg_cmd = 'python %s %s %s %s %s'%(vgg_py, train_dir, val_dir, opts.lr, model_name) 
+    vgg_cmd = 'python %s %s %s %s %s %s'%(vgg_py, train_dir, val_dir, opts.lr, opts.epc, model_name) 
     SlurmHeader = Slurm_gpu_header%(opts.prefix,opts.prefix,opts.prefix,opts.gpu)
     SlurmHeader += 'module load anaconda\n'
     SlurmHeader += 'source activate MCY\n'

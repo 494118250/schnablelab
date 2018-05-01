@@ -10,6 +10,7 @@ import os.path as op
 import sys
 from JamesLab.apps.base import ActionDispatcher, OptionParser, glob,iglob
 from JamesLab.apps.natsort import natsorted
+from JamesLab.apps.header import Slurm_header
 from subprocess import call
 from subprocess import Popen
 
@@ -42,7 +43,7 @@ def submit(args):
     folder, = args
     alljobs = ['sbatch -p jclarke %s'%i for i in glob(folder, opts.pattern)] \
         if opts.partition == 'jclarke' \
-        else ['sbatch -p batch %s'%i for i in glob(folder, opts.pattern)]
+        else ['sbatch %s'%i for i in glob(folder, opts.pattern)]
     print("Total %s jobs under '%s'"%(len(alljobs), folder))
 
     if opts.range == 'all':
@@ -55,10 +56,10 @@ def submit(args):
             for i in alljobs[start-1 : end]:
                 print(i)
                 call(i, shell=True)
-            print '%s of total %s were submitted. [%s to %s] this time.' \
-                %(len(alljobs[start-1 : end]), len(alljobs), start, end)
+            print('%s of total %s were submitted. [%s to %s] this time.' \
+                %(len(alljobs[start-1 : end]), len(alljobs), start, end))
         else:
-            print 'jobs exceed the limit'
+            print('jobs exceed the limit')
 
 def cancel():
     """
@@ -78,14 +79,67 @@ def cancel():
         for k in jobs:
             subprocess.call('scancel %s'%k, shell=True)
     elif myorder == 'no':
-        print 'OK'
+        print('OK')
     else:
-        print 'Please choose yes or no' 
+        print('Please choose yes or no')
 
 def quickjob(args):
     """
-    %prog
+    %prog cmd(':' separated command)
+    generate a qucik slurm job
     """
+    p = OptionParser(quickjob.__doc__)
+    p.set_slurm_opts(array=False)
+    opts, args = p.parse_args(args)
+    if len(args) == 0:
+        sys.exit(not p.print_help())
+    cmd, = args
+    cmd = ' '.join(cmd.split(':'))+'\n'
+    header = Slurm_header%(opts.time, opts.memory, opts.prefix, opts.prefix, opts.prefix)
+    header += cmd
+    jobfile = '%s.slurm'%opts.prefix
+    f = open(jobfile, 'w')
+    f.write(header)
+    print('slurm file %s.slurm has been created, you can sbatch your job file now.'%opts.prefix)
 
 if __name__ == "__main__":
     main()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
