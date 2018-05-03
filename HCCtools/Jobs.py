@@ -13,6 +13,7 @@ from JamesLab.apps.natsort import natsorted
 from JamesLab.apps.header import Slurm_header
 from subprocess import call
 from subprocess import Popen
+import subprocess
 
 def main():
     actions = (
@@ -61,27 +62,35 @@ def submit(args):
         else:
             print('jobs exceed the limit')
 
-def cancel():
+def cancel(args):
     """
     %prog
     
     Cancel jobs on HCC
     """
-    myjobs = subprocess.Popen('squeue -u cmiao', shell = True, stdout=subprocess.PIPE).communicate()[0]
+    p = OptionParser(cancel.__doc__)
+    p.add_option("--status", default='running', choices=('running', 'pending'),
+                 help="specify the status of the jobs you want to cancel [default: %default]")
+    opts, args = p.parse_args(args)
+    if len(args) != 0:
+        sys.exit(not p.print_help())
+    myjobs = Popen('squeue -u cmiao', shell = True, stdout=subprocess.PIPE).communicate()[0]
 
-    jobs = []
+    running_jobs, pending_jobs, others = [], [], []
     for i in myjobs.split('\n'):
         j = i.strip().split()
-        if len(j) == 8 and '0:00' in j:
-            jobs.append(j[0])
-    myorder = raw_input("are you sure to cancel all %s the pending jobs?(yes/no)"%len(jobs))
-    if myorder == 'yes':
-        for k in jobs:
-            subprocess.call('scancel %s'%k, shell=True)
-    elif myorder == 'no':
-        print('OK')
-    else:
-        print('Please choose yes or no')
+        if len(j) == 8:
+            if j[4] == 'R':
+                running_jobs.append(j[0])
+            elif j[4] == 'PD':
+                pending_jobs.append(j[0])
+            else:
+                others.append(j[0])
+    cmd = 'scancel %s' %(' '.join(running_jobs)) \
+        if opts.status == 'running' \
+        else 'scancel %s' %(' '.join(pending_jobs))
+
+    print(cmd)
 
 def quickjob(args):
     """

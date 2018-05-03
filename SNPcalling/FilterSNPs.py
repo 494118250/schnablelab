@@ -104,6 +104,12 @@ def Miss_Rate(args):
     f.write(header)
     print('slurm file %s.missR.slurm has been created, you can sbatch your job file.'%prefix)
 
+def genotypes_count(snp, imputed):
+    a1, a2, h, m = snp.count('0/0'), i.count('1/1'), i.count('0/1'), i.count('./.')\
+        if imputed=='no' \
+        else i.count('0|0'), i.count('1|1'), i.count('0|1'), i.count('.|.')
+    return a1, a2, h, m
+
 def HeterMiss_Rate(args):
     """
     %prog vcf
@@ -113,6 +119,8 @@ def HeterMiss_Rate(args):
     p.add_option('--h2_rate', default = 0.05,
         help = 'specify the heterozygous rate cutoff')
     p.add_option('--m_rate', default = 0.4, 
+        help = 'specify the missing rate cutoff')
+    p.add_option('--imputed', default = 'no', choices=('no', 'yes'), 
         help = 'specify the missing rate cutoff')
     p.set_slurm_opts(array=False)
     opts, args = p.parse_args(args)
@@ -128,17 +136,46 @@ def HeterMiss_Rate(args):
         if i.startswith('#'):
             f1.write(i)
         else:
-            a1, a2, h, m = i.count('0/0'), i.count('1/1'), i.count('0/1'), i.count('./.')
+            a1, a2, h, m = genotypes_count(i, opts.imputed)
             if h < min(a1, a2) and h/float(a1+a2+h) < float(opts.h2_rate) and m/float(a1+a2+h+m) < float(opts.m_rate):
+                f1.write(i)
+    f0.close()
+    f1.close()
+
+def MAF(args):
+    """
+    %prog maf vcf
+    Remove SNPs with rare MAF
+    """
+    p = OptionParser(HeterMiss_Rate.__doc__)
+    p.add_option('--imputed', default = 'no', choices=('no', 'yes'),
+        help = 'specify the missing rate cutoff')
+    opts, args = p.parse_args(args)
+    if len(args) == 0:
+        sys.exit(not p.print_help())
+    maf, vcffile, = args   
+    maf = float(maf)
+    
+    prefix = vcffile.split('.')[0]
+    new_f = prefix + '.maf.vcf'
+    
+    f0 = open(vcffile)
+    f1 = open(new_f, 'w')
+    for i in f0:
+        if i.startswith('#'):
+            f1.write(i)
+        else:
+            a1, a2, h, m = genotypes_count(i, opts.imputed)
+            total = float((a1+a2+h)*2)
+            allele_1 = a1*2 + h
+            allele_2 = a2*2 + h
+            if min(allele_1/total, allele_2/total) > MAF:
                 f1.write(i)
     f0.close()
     f1.close()
 
 def Bad_Indels(args):
     pass
-def MAF(args):
-    pass
-
 
 if __name__ == "__main__":
     main()
