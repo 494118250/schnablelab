@@ -16,12 +16,15 @@ from JamesLab.apps.header import Slurm_header
 # the location of linkimpute, beagle executable
 lkipt = op.abspath(op.dirname(__file__))+'/../apps/LinkImpute.jar'
 begle = op.abspath(op.dirname(__file__))+'/../apps/beagle.21Jan17.6cc.jar'
+tassel = op.abspath(op.dirname(__file__))+'/../apps/tassel-5-standalone/run_pipeline.pl'
 
 def main():
     actions = (
         ('splitVCF', 'split a vcf to several smaller files with equal size'),
         ('combineVCF', 'combine split vcfs'),
         ('impute', 'impute vcf using beagle or linkimpute'),
+        ('vcf2hmp', 'convert vcf to hmp format'),
+        ('FixIndelHmp', 'fix the indels problems in hmp file converted from tassel'),
 )
     p = ActionDispatcher(actions)
     p.dispatch(globals())
@@ -127,6 +130,82 @@ def impute(args):
     f.write(header)
     f.close()
     print('slurm file %s.%s.slurm has been created! '%(prefix, opts.software))
+
+def vcf2hmp(args):
+    """
+    %prog vcf2hmp vcf
+    convert vcf generated from beagle to hmp format using tassel
+    """
+    p = OptionParser(vcf2hmp.__doc__)
+    p.set_slurm_opts(array=False)
+    p.add_option('--version', default = '2', choices=('1', '2'),
+        help = 'specify the hmp type. 1: hyploid. 2: diploid')
+    opts, args = p.parse_args(args)
+    if len(args) == 0:
+        sys.exit(not p.print_help())
+    vcffile, = args
+    prefix = '.'.join(vcffile.split('.')[0:-1])
+    cmd = '%s -Xms512m -Xmx10G -fork1 -vcf %s -export -exportType HapmapDiploid\n'%(tassel, vcffile) \
+        if opts.version=='2' \
+        else '%s -Xms512m -Xmx10G -fork1 -vcf %s -export -exportType Hapmap\n'%(tassel, vcffile)
+    header = Slurm_header%(opts.time, opts.memory, opts.prefix, opts.prefix,opts.prefix)
+    header += 'module load java/1.8\n'
+    header += cmd
+    f = open('%s.vcf2hmp.slurm'%prefix, 'w')
+    f.write(header)
+    f.close()
+    print('slurm file %s.vcf2hmp.slurm has been created, you can sbatch your job file.'%prefix)
+
+def FixIndelHmp(args):
+    """
+    %prog FixIndelHmp hmp
+    Fix the InDels problems in hmp file generated from Tassel.
+    """
+    p = OptionParser(FixIndelHmp.__doc__)
+    p.set_slurm_opts(array=False)
+    opts, args = p.parse_args(args)
+    if len(args) == 0:
+        sys.exit(not p.print_help())
+    hmpfile, = args
+    prefix = '.'.join(hmpfile.split('.')[0:-1])
+
+    f = open(hmpfile)
+    f1 = open('%s.Findel.hmp'%prefix, 'w')
+
+    bict = {'A':'T', 'T':'C', 'C':'A', 'G':'A'}
+    for i in f:
+        j = i.split()
+        if '+' in j[1]:
+            nb = bict[j[1][0]] if j[1][0] != '+' else bict[j[1][-1]]
+            tail  = '\t'.join(j[11:])+'\n'
+            n_tail = tail.replace('+', nb)
+            head = '\t'.join(j[0:11])
+            n_head = head.replace('/+', '/%s'%nb) \
+                if j[1][0] != '+' \
+                else head.replace('+/', '%s/'%nb)
+            n_line = n_head + '\t' + n_tail
+            f1.write(n_line)
+        elif '-' in j[1]:
+            nb = bict[j[1][0]] if j[1][0] != '-' else bict[j[1][-1]]
+            tail  = '\t'.join(j[11:])+'\n'
+            n_tail = tail.replace('-', nb)
+            head = '\t'.join(j[0:11])
+            n_head = head.replace('/-', '/%s'%nb) \
+                if j[1][0] != '-' \
+                else head.replace('-/', '%s/'%nb)
+            n_line = n_head + '\t' + n_tail
+            f1.write(n_line)
+        else:
+            f1.write(i)
+    f.close()
+    f1.close()
+
+
+
+
+
+
+
 
 def downsampling(args):
     pass

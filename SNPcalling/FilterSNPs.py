@@ -105,9 +105,13 @@ def Miss_Rate(args):
     print('slurm file %s.missR.slurm has been created, you can sbatch your job file.'%prefix)
 
 def genotypes_count(snp, imputed):
-    a1, a2, h, m = snp.count('0/0'), i.count('1/1'), i.count('0/1'), i.count('./.')\
-        if imputed=='no' \
-        else i.count('0|0'), i.count('1|1'), i.count('0|1'), i.count('.|.')
+    if imputed == 'no':
+        a1, a2, h, m = snp.count('0/0'), snp.count('1/1'), snp.count('0/1'), snp.count('./.')
+    elif imputed == 'yes':
+        a1, a2, m = snp.count('0|0'), snp.count('1|1'), snp.count('.|.')
+        h = snp.count('0|1')+snp.count('1|0')
+    else:
+        print('only no or yes!!!')
     return a1, a2, h, m
 
 def HeterMiss_Rate(args):
@@ -147,7 +151,7 @@ def MAF(args):
     %prog maf vcf
     Remove SNPs with rare MAF
     """
-    p = OptionParser(HeterMiss_Rate.__doc__)
+    p = OptionParser(MAF.__doc__)
     p.add_option('--imputed', default = 'no', choices=('no', 'yes'),
         help = 'specify the missing rate cutoff')
     opts, args = p.parse_args(args)
@@ -167,9 +171,9 @@ def MAF(args):
         else:
             a1, a2, h, m = genotypes_count(i, opts.imputed)
             total = float((a1+a2+h)*2)
-            allele_1 = a1*2 + h
-            allele_2 = a2*2 + h
-            if min(allele_1/total, allele_2/total) > MAF:
+            af_1 = (a1*2 + h)/total
+            af_2 = (a2*2 + h)/total
+            if min(af_1, af_2) > maf:
                 f1.write(i)
     f0.close()
     f1.close()
