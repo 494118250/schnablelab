@@ -41,10 +41,10 @@ def cMLM(args):
     
     f2 = open('%s.cMLM.slurm'%mem, 'w')
     h = Slurm_header
-    h += 'module load R/3.3'
+    h += 'module load R/3.3\n'
     header = h%(opts.time, opts.memory, opts.prefix, opts.prefix, opts.prefix)
     f2.write(header)
-    cmd = 'R CMD BATCH %s.cMLM.R'%mem
+    cmd = 'R CMD BATCH %s.cMLM.R\n'%mem
     f2.write(cmd)
     f1.close()
     f2.close()

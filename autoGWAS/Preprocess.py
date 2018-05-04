@@ -318,7 +318,7 @@ def reorgnzGemmaKinship(args):
         f2.write(newline)
     f1.close()
     f2.close() 
-    print("Finished! Kinship matrix file for GEMMA 'GAPIT.%s' has been generated."%gemmaKin
+    print("Finished! Kinship matrix file for GEMMA 'GAPIT.%s' has been generated."%gemmaKin)
 
 
 def genGemmaPheno(args):
