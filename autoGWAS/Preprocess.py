@@ -28,6 +28,7 @@ def main():
         ('LegalHmp', 'convert illegal genotypes in hmp file to legal genotypes'),
         ('SortHmp', 'Sort hmp position in wired tassle way'),
         ('reorgnzTasselPCA', 'reorganize PCA results from TASSEL so it can be used in other software'),
+        ('reorgnzGemmaKinship', 'reorganize kinship results from GEMMA so it can be used in other software'),
         ('genGemmaPheno', 'reorganize normal phenotype format to GEMMA'),
         ('combineHmp', 'combine split chromosome Hmps to a single large one'),
             )
@@ -294,6 +295,32 @@ def reorgnzTasselPCA(args):
     df1.to_csv(gemma_pca, sep='\t', index=False, header=False)
     print('finished! %s, %s, %s have been generated.'%(gapit_pca,farm_pca,gemma_pca))
     
+def reorgnzGemmaKinship(args):
+    """
+    %prog reorgnzGemmaKinship GEMMAkinship hmp
+
+    Reorganize kinship result from GEMMA so it can be used in other software, like GAPIT.
+    The hmp file only provides the order of the smaple names.
+    """
+    p = OptionParser(reorgnzGemmaKinship.__doc__)
+    opts, args = p.parse_args(args)
+    if len(args) == 0:
+        sys.exit(not p.print_help())
+    gemmaKin, hmpfile,  = args
+    
+    f = open(hmpfile)
+    SMs = f.readline().split()[11:]
+    f.close()
+    f1 = open(gemmaKin)
+    f2 = open('GAPIT.'+gemmaKin, 'w')
+    for i,j in zip(SMs, f1):
+        newline = i+'\t'+j
+        f2.write(newline)
+    f1.close()
+    f2.close() 
+    print("Finished! Kinship matrix file for GEMMA 'GAPIT.%s' has been generated."%gemmaKin
+
+
 def genGemmaPheno(args):
     """
     %prog genGemmaPheno normalPheno
@@ -345,7 +372,7 @@ def subsampling(args):
     p.add_option('--header', default=False,
         help = 'whether a header exist in your sample name file')
     p.add_option('--filter', default=True,
-        help = 'if True, SNPs with maf <= 0.01 and paralogous SNPs will be removed automatically')
+        help = 'if True, SNPs with maf <= 0.01 and paralogous SNPs (bad heterozygous) will be removed automatically')
     opts, args = p.parse_args(args)
 
     if len(args) == 0:

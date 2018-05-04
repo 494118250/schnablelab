@@ -21,7 +21,7 @@ def main():
 
 def cMLM(args):
     """
-    %prog cMLM pheno geno_prefix PCA Kinship
+    %prog cMLM pheno(with header, tab delimited) geno_prefix(GM and GD prefix) PCA Kinship
     
     Run automated GAPIT compressed mixed linear model
     """
