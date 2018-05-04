@@ -20,7 +20,7 @@ def main():
 
 def farmcpu(args):
     """
-    %prog farmcpu pheno geno_prefix PCA
+    %prog farmcpu pheno(with header, tab delimited) geno_prefix(GM and GD prefix) PCA
 
     Run automated FarmCPU
     """
@@ -36,7 +36,7 @@ def farmcpu(args):
     farmcpu_cmd = FarmCPU_header%(pheno,geno_prefix,geno_prefix,PCA,mem)
     f1.write(farmcpu_cmd)
 
-    f2 = open('%s.farmcpu.slurm'%mem, 'w')
+    f2 = open('%s.FarmCPU.slurm'%mem, 'w')
     h = Slurm_header
     h += 'module load R/3.3\n'
     header = h%(opts.time, opts.memory, opts.prefix, opts.prefix, opts.prefix)
@@ -45,7 +45,7 @@ def farmcpu(args):
     f2.write(cmd)
     f1.close()
     f2.close()
-    print('R script %s.farmcpu.R and slurm file %s.farmcpu.slurm has been created, you can sbatch your job file.'%(mem, mem))
+    print('R script %s.FarmCPU.R and slurm file %s.FarmCPU.slurm has been created, you can sbatch your job file.'%(mem, mem))
 
 if __name__ == "__main__":
     main()

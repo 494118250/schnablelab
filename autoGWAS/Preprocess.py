@@ -14,6 +14,7 @@ from subprocess import call
 
 # the location of gemma executable file
 gemma = op.abspath(op.dirname(__file__))+'/../apps/gemma'
+tassel = op.abspath(op.dirname(__file__))+'/../apps/tassel-5-standalone/run_pipeline.pl'
 
 def main():
     actions = (
@@ -26,7 +27,7 @@ def main():
         ('downsampling', 'using part of SNPs when dataset is too large'),
         ('LegalHmp', 'convert illegal genotypes in hmp file to legal genotypes'),
         ('SortHmp', 'Sort hmp position in wired tassle way'),
-        ('reognzTasselPCA', 'reorganize PCA results from TASSEL so it can be used in other software'),
+        ('reorgnzTasselPCA', 'reorganize PCA results from TASSEL so it can be used in other software'),
         ('genGemmaPheno', 'reorganize normal phenotype format to GEMMA'),
         ('combineHmp', 'combine split chromosome Hmps to a single large one'),
             )
@@ -260,11 +261,10 @@ def genPCA10(args):
         sys.exit(not p.print_help())
     hmp, = args
     out_prefix = hmp.replace('.hmp', '')
-    cmd = 'run_pipeline.pl -Xms56g -Xmx58g -fork1 -h %s -PrincipalComponentsPlugin -ncomponents 10 -covariance true -endPlugin -export 10PC.%s -runfork1'%(hmp, out_prefix)
+    cmd = '%s -Xms18g -Xmx20g -fork1 -h %s -PrincipalComponentsPlugin -ncomponents 10 -covariance true -endPlugin -export 10PC.%s -runfork1'%(tassel, hmp, out_prefix)
 
     h = Slurm_header
     h += 'module load java/1.8\n'
-    h += 'module load tassel/5.2\n'
     header = h%(opts.time, opts.memory, opts.prefix, opts.prefix, opts.prefix)
     header += cmd
     f = open('%s.PCA10.slurm'%out_prefix, 'w')

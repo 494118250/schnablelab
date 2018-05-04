@@ -7,7 +7,7 @@ Run GEMMA command or generate the coresponding slurm job file. Find details in G
 import os.path as op
 import sys
 from JamesLab.apps.base import ActionDispatcher, OptionParser
-from JamesLab.apps.header import Slrum_header
+from JamesLab.apps.header import Slurm_header
 from JamesLab.apps.natsort import natsorted
 
 # the location of gemma executable file
@@ -41,7 +41,7 @@ def GLM(args):
         %(gemma, meanG, Pheno, annoG, Outdir, outprefix)
     print('The command running on the local node:\n%s'%cmd)
 
-    h = Slrum_header
+    h = Slurm_header
     header = h%(opts.time, opts.memory, opts.prefix, opts.prefix, opts.prefix)
     header += cmd
     f = open('%s.glm.slurm'%outprefix, 'w')
@@ -67,7 +67,7 @@ def MLM(args):
         sys.exit(not p.print_help())
     GenoPrefix, Pheno, Outdir = args
     meanG, annoG = GenoPrefix+'.mean', GenoPrefix+'.annotation'
-    outprefix = '.'.join(Pheno.split('.')[0:2])
+    outprefix = '.'.join(Pheno.split('.')[0:-1])
     cmd = '%s -g %s -p %s -a %s -lmm 4 -outdir %s -o %s' \
         %(gemma, meanG, Pheno, annoG, Outdir, outprefix)
     if opts.kinship:
@@ -76,7 +76,7 @@ def MLM(args):
         cmd += ' -c %s'%opts.pca
     print('The command running on the local node:\n%s'%cmd)
 
-    h = Slrum_header
+    h = Slurm_header
     header = h%(opts.time, opts.memory, opts.prefix, opts.prefix, opts.prefix)
     header += cmd
     f = open('%s.mlm.slurm'%outprefix, 'w')
@@ -123,7 +123,9 @@ def Manhattan(args):
     df['MinusLog10p_score'] = -np.log10(df['p_score'])
 
     df_grouped = df.groupby(by='chr')
-    groupkeys = natsorted(list(df_grouped.groups.keys()))
+    groupkeys = list(df_grouped.groups.keys())
+    #groupkeys = natsorted(groupkeys)
+    print(groupkeys)
 
     for typePvalue in ('MinusLog10p_wald','MinusLog10p_lrt','MinusLog10p_score'):
 
