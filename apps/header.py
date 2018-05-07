@@ -39,7 +39,7 @@ myY <- read.table("%s", head = TRUE) # sep is the space related separator
 myGM <- read.table("%s.GM", head = TRUE)
 myGD <- read.table("%s.GD", head = TRUE)
 myCV <- read.table("%s", head = TRUE)
-myKI <- read.table("%s", sep=',', head = FALSE)
+myKI <- read.table("%s", head = FALSE)
 #Step 2: Run GAPIT
 myGAPIT <- GAPIT(Y=myY, GD=myGD, GM=myGM, CV=myCV, KI=myKI, memo='%s')
 '''
@@ -57,4 +57,20 @@ myGD <- read.big.matrix("%s.GD", type="char", sep="\t", head = TRUE)
 myCV <- read.table("%s", head = TRUE)
 #Step 2: Run FarmCPU
 myFarmCPU <- FarmCPU(Y=myY, GD=myGD, GM=myGM, CV=myCV, method.bin="optimum", bin.size=c(5e5,5e6,5e7), bin.selection=seq(10,100,10), threshold.output=1, memo='%s')
+'''
+
+MSTMap_header = '''
+population_type RIL%s
+population_name original
+distance_function kosambi
+cut_off_p_value 0.000001
+no_map_dist 15.0
+no_map_size 0
+missing_threshold 0.3
+estimation_before_clustering yes
+detect_bad_data yes
+objective_function COUNT
+number_of_loci %s
+number_of_individual %s
+
 '''
