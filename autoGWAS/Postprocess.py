@@ -133,7 +133,7 @@ def fetchEVs(args):
 
 def fetchLinkedSNPs(args):
     """
-    %prog SNPlist bedprefix r2_cutoff
+    %prog SNPlist bed_prefix r2_cutoff output_prefix
 
     extract linked SNPs using plink
     """
@@ -146,20 +146,21 @@ def fetchLinkedSNPs(args):
     if len(args) == 0:
         sys.exit(not p.print_help())
 
-    SNPlist, bedprefix, cutoff = args
+    SNPlist, bedprefix, cutoff, output_prefix, = args
     df = pd.read_csv(SNPlist, delim_whitespace=True, header=None) \
         if opts.header == 'no' \
         else pd.read_csv(SNPlist, delim_whitespace=True)
     SNPs = df.iloc[:, 0]
     SNPsfile = SNPs.to_csv('SNPs_list.csv', index=False)
-    cmd = '%s --noweb --bfile %s --out %s.LD --r2 --ld-window 99999 --ld-window-kb 1000 --ld-window-r2 %s --ld-snp-list SNPs_list.csv\n'%(plink, bedprefix, bedprefix, cutoff)
-    f = open('.LD.slurm'%bedprefix, 'w')
+    cmd = '%s --bfile %s --r2 --ld-snp-list SNPs_list.csv --ld-window-kb 5000 --ld-window 99999 --ld-window-r2 %s --noweb --out %s\n'%(plink, bedprefix, cutoff, output_prefix)
+    print('command run on local:\n%s'%cmd)
+    f = open('%s.slurm'%output_prefix, 'w')
     h = Slurm_header
     header = h%(opts.time, opts.memory, opts.prefix, opts.prefix, opts.prefix)
     header += cmd
     f.write(header)
     f.close()
-    print('Job file has been generated. You can submit: sbatch -p jclarke %s.LD.slurm'%bedprefix)
+    print('Job file has been generated. You can submit: sbatch -p jclarke %s.slurm'%output_prefix)
      
 
 def PlotEVs(args):

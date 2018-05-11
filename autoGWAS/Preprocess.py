@@ -23,6 +23,7 @@ def main():
         ('hmp2numeric', 'transform hapmap format to numeric format(gapit and farmcpu)'),
         ('hmp2MVP', 'transform hapmap format to MVP genotypic format'),
         ('hmp2ped', 'transform hapmap format to plink ped format'),
+        ('nine2zero', 'replace -9 in the ped file generated from tassel to 0!!!'),
         ('ped2bed', 'convert plink ped format to binary bed format'),
         ('genKinship', 'using gemma to generate centered kinship matrix'),
         ('genPCA10', 'using tassel to generate the first 10 PCs'),
@@ -206,7 +207,7 @@ def hmp2ped(args):
         sys.exit(not p.print_help())
     hmp,  = args
     prefix = '.'.join(hmp.split('.')[0:-1])
-    cmd = '%s -Xms512m -Xmx40G -fork1 -h %s -export -exportType Plink\n'%(tassel, hmp)
+    cmd = '%s -Xms512m -Xmx38G -fork1 -h %s -export -exportType Plink\n'%(tassel, hmp)
     header = Slurm_header%(opts.time, opts.memory, opts.prefix, opts.prefix,opts.prefix)
     header += 'module load java/1.8\n'
     header += cmd
@@ -214,6 +215,27 @@ def hmp2ped(args):
     f.write(header)
     f.close()
     print('Job file has been created. You can submit: sbatch -p jclarke %s.hmp2ped.slurm'%prefix)
+
+def nine2zero(args):
+    """
+    %prog old_ped new_ped
+
+    Convert -9 to 0 in the ped genotype file
+    """
+    p = OptionParser(nine2zero.__doc__)
+    opts, args = p.parse_args(args)
+    if len(args) == 0:
+        sys.exit(not p.print_help())
+    old_ped, new_ped,  = args
+    f = open(old_ped)
+    f1 = open(new_ped, 'w')
+    for i in f:
+        j = i.replace('-9\t', '0\t')
+        f1.write(j)
+    f.close()
+    f1.close()
+    print('Done!')
+
 
 def ped2bed(args):
     """
