@@ -70,6 +70,41 @@ def fetchMAF(args):
         f1.write(newi)
     f.close()
     f1.close()
+    print('see MAF.%s'%SNPlist)
+
+def fetchEVs(args):
+    """
+    %prog SNPlist FarmCPUresult
+    
+    extract effect size of SNPs in the list from FarmCPU result
+    """
+    p = OptionParser(fetchMAF.__doc__)
+    p.add_option('--header', default = 'no', choices=('yes', 'no'),
+        help = 'specify if there is a header in your SNP list file')
+    opts, args = p.parse_args(args)
+
+    if len(args) == 0:
+        sys.exit(not p.print_help())
+
+    SNPlist, farmResult = args
+    df = pd.read_csv(SNPlist, delim_whitespace=True, header=None) \
+        if opts.header == 'no' \
+        else pd.read_csv(SNPlist, delim_whitespace=True)
+    SNPs = df.iloc[:, 0]
+    SNPsfile = SNPs.to_csv('SNPs_list.csv', index=False)
+    cmd = 'grep -f SNPs_list.csv %s > FarmCPU_list.csv'%farmResult
+    call(cmd, shell=True)
+    f = open('FarmCPU_list.csv')
+    f1 = open('EVs.%s'%SNPlist, 'w')
+    f1.write('SNPs\tEVs\n')
+    for i in f:
+        j = i.strip().split(',')
+        snp, ev = j[0], j[-1]
+        newi = '%s\t%s\n'%(snp, ev)
+        f1.write(newi)
+    f.close()
+    f1.close()
+    print('see EVs.%s'%SNPlist)
 
 def PlotEVs(args):
     """
