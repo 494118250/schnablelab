@@ -15,11 +15,14 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
+# the location of plink executale file
+plink = op.abspath(op.dirname(__file__))+'/../apps/plink'
 
 def main():
     actions = (
         ('fetchMAF', 'calculate the MAFs of selected SNPs'),
         ('fetchEVs', 'fetch effect sizes of selected SNPs'),
+        ('fetchLinkedSNPs', 'fetch highly linked SNPs'),
         ('fetchGenes', 'fetch genes and functions of selected SNPs'),
         ('PlotEVs', 'plot histgram of effect sizes'),
         ('PlotMAF', 'plot histgram of maf'),
@@ -100,7 +103,7 @@ def fetchEVs(args):
     
     extract effect size of SNPs in the list from FarmCPU result
     """
-    p = OptionParser(fetchMAF.__doc__)
+    p = OptionParser(fetchEVs.__doc__)
     p.add_option('--header', default = 'no', choices=('yes', 'no'),
         help = 'specify if there is a header in your SNP list file')
     opts, args = p.parse_args(args)
@@ -127,6 +130,37 @@ def fetchEVs(args):
     f.close()
     f1.close()
     print('see EVs.%s'%SNPlist)
+
+def fetchLinkedSNPs(args):
+    """
+    %prog SNPlist bedprefix r2_cutoff
+
+    extract linked SNPs using plink
+    """
+    p = OptionParser(fetchLinkedSNPs.__doc__)
+    p.set_slurm_opts(array=False)
+    p.add_option('--header', default = 'no', choices=('yes', 'no'),
+        help = 'specify if there is a header in your SNP list file')
+    opts, args = p.parse_args(args)
+
+    if len(args) == 0:
+        sys.exit(not p.print_help())
+
+    SNPlist, bedprefix, cutoff = args
+    df = pd.read_csv(SNPlist, delim_whitespace=True, header=None) \
+        if opts.header == 'no' \
+        else pd.read_csv(SNPlist, delim_whitespace=True)
+    SNPs = df.iloc[:, 0]
+    SNPsfile = SNPs.to_csv('SNPs_list.csv', index=False)
+    cmd = '%s --noweb --bfile %s --out %s.LD --r2 --ld-window 99999 --ld-window-kb 1000 --ld-window-r2 %s --ld-snp-list SNPs_list.csv\n'%(plink, bedprefix, bedprefix, cutoff)
+    f = open('.LD.slurm'%bedprefix, 'w')
+    h = Slurm_header
+    header = h%(opts.time, opts.memory, opts.prefix, opts.prefix, opts.prefix)
+    header += cmd
+    f.write(header)
+    f.close()
+    print('Job file has been generated. You can submit: sbatch -p jclarke %s.LD.slurm'%bedprefix)
+     
 
 def PlotEVs(args):
     """

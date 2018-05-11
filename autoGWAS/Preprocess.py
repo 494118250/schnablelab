@@ -14,13 +14,16 @@ from subprocess import call
 
 # the location of gemma executable file
 gemma = op.abspath(op.dirname(__file__))+'/../apps/gemma'
+plink = op.abspath(op.dirname(__file__))+'/../apps/plink'
 tassel = op.abspath(op.dirname(__file__))+'/../apps/tassel-5-standalone/run_pipeline.pl'
 
 def main():
     actions = (
-        ('hmp2BIMBAM', 'transform hapmap format to BIMBAM format'),
+        ('hmp2BIMBAM', 'transform hapmap format to BIMBAM format (GEMMA)'),
         ('hmp2numeric', 'transform hapmap format to numeric format(gapit and farmcpu)'),
         ('hmp2MVP', 'transform hapmap format to MVP genotypic format'),
+        ('hmp2ped', 'transform hapmap format to plink ped format'),
+        ('ped2bed', 'convert plink ped format to binary bed format'),
         ('genKinship', 'using gemma to generate centered kinship matrix'),
         ('genPCA10', 'using tassel to generate the first 10 PCs'),
         ('subsampling', 'resort hmp file by extracting part of samples'),
@@ -189,6 +192,49 @@ def genKinship(args):
     f.write(header)
     f.close()
     print('slurm file %s.kinship.slurm has been created, you can sbatch your job file.'%mean_prefix)
+
+def hmp2ped(args):
+    """
+    %prog hmp
+
+    Convert hmp to plink ped format using Tassel
+    """
+    p = OptionParser(hmp2ped.__doc__)
+    p.set_slurm_opts(array=False)
+    opts, args = p.parse_args(args)
+    if len(args) == 0:
+        sys.exit(not p.print_help())
+    hmp,  = args
+    prefix = '.'.join(hmp.split('.')[0:-1])
+    cmd = '%s -Xms512m -Xmx40G -fork1 -h %s -export -exportType Plink\n'%(tassel, hmp)
+    header = Slurm_header%(opts.time, opts.memory, opts.prefix, opts.prefix,opts.prefix)
+    header += 'module load java/1.8\n'
+    header += cmd
+    f = open('%s.hmp2ped.slurm'%prefix, 'w')
+    f.write(header)
+    f.close()
+    print('Job file has been created. You can submit: sbatch -p jclarke %s.hmp2ped.slurm'%prefix)
+
+def ped2bed(args):
+    """
+    %prog ped_prefix
+
+    Convert plink ped to binary bed format using Plink
+    """
+    p = OptionParser(ped2bed.__doc__)
+    p.set_slurm_opts(array=False)
+    opts, args = p.parse_args(args)
+    if len(args) == 0:
+        sys.exit(not p.print_help())
+    ped_prefix,  = args
+    cmd = '%s --noweb --file %s --make-bed --out %s\n'%(plink, ped_prefix, ped_prefix)
+    print('run cmd on local:\n%s'%cmd)
+    header = Slurm_header%(opts.time, opts.memory, opts.prefix, opts.prefix,opts.prefix)
+    header += cmd
+    f = open('%s.ped2bed.slurm'%ped_prefix, 'w')
+    f.write(header)
+    f.close()
+    print('Job file has been created. You can submit: sbatch -p jclarke %s.ped2bed.slurm'%ped_prefix)
 
 def LegalGeno(row):
     """
