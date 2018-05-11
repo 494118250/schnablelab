@@ -165,6 +165,7 @@ def Manhattan(args):
         ax.set_ylabel(r'$\mathrm{-log_{10}(Pvalue)}$', fontsize=18, fontweight='bold')
         ax.set_title(title,  fontsize = 25, fontweight='bold')
         plt.savefig('Mantattan.%s.%s.png'%(title, typePvalue.split('10')[-1]))
+        plt.savefig('Mantattan.%s.%s.pdf'%(title, typePvalue.split('10')[-1]))
 
 
 if __name__ == "__main__":
