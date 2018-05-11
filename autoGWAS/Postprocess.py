@@ -12,6 +12,7 @@ from JamesLab.apps.base import ActionDispatcher, OptionParser
 from JamesLab.apps.header import Slurm_header
 from subprocess import call
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 
 
@@ -35,7 +36,23 @@ def parseMAF(i):
         if a1 <= a2 \
         else a2/float(a1+a2)
     count = len(genos)*maf
-    return j[0], maf, count
+
+    minor_allele, major_allele, = (allele1, allele2) if a1 <= a2 else (allele2, allele1)
+    minor_idx, major_idx, hetero_idx = [], [] , []
+    for m,n in enumerate(j[11:]):
+        k = list(set(n))
+        if len(k)==1:
+            if k[0] == minor_allele:
+                minor_idx.append(m+11)
+            elif k[0] == major_allele:
+                major_idx.append(m+11)
+            else:
+                print(n)
+                print('bad allele!!!')
+        else:
+            hetero_idx.append(m+11)
+
+    return j[0], maf, count, minor_idx, major_idx, hetero_idx
     
 
 def fetchMAF(args):
@@ -63,10 +80,15 @@ def fetchMAF(args):
     call(cmd, shell=True)
     f = open('Genotypes_list.csv')
     f1 = open('MAF.%s'%SNPlist, 'w')
-    f1.write('SNPs\tMAF\tCount\n')
+    f1.write('SNPs\tMAF\tCount\tMinorAlleleSMs\tMajorAlleleSMs\tHeteroSMs\n')
+    header = np.array(open(hmp).readline().split())
     for i in f:
-        snp, maf, count = parseMAF(i)
-        newi = '%s\t%s\t%s\n'%(snp, maf, count)
+        snp, maf, count, minor_idx, major_idx, hetero_idx = parseMAF(i)
+        minor_SMs, major_SMs, hetero_SMs = ','.join(list(header[minor_idx])), ','.join(list(header[major_idx])), ','.join(list(header[hetero_idx]))
+        print(minor_SMs)
+        print(major_SMs)
+        print(hetero_SMs)
+        newi = '%s\t%s\t%s\t%s\t%s\t%s\n'%(snp, maf, count, minor_SMs, major_SMs, hetero_SMs)
         f1.write(newi)
     f.close()
     f1.close()
