@@ -17,13 +17,15 @@ import matplotlib.pyplot as plt
 
 # the location of plink executale file
 plink = op.abspath(op.dirname(__file__))+'/../apps/plink'
-
+faOneRecord = op.abspath(op.dirname(__file__))+'/../apps/faOneRecord' 
 def main():
     actions = (
         ('fetchMAF', 'calculate the MAFs of selected SNPs'),
         ('fetchEVs', 'fetch effect sizes of selected SNPs'),
         ('fetchLinkedSNPs', 'fetch highly linked SNPs'),
-        ('fetchGenes', 'fetch genes and functions of selected SNPs'),
+        ('fetchGene', 'fetch genes of selected SNPs from significant SNP list'),
+        ('fetchFunc', 'fetch functions of candidate genes'),
+        ('fetchProSeq', 'fetch corresponding sequences of condidated genes'),
         ('PlotEVs', 'plot histgram of effect sizes'),
         ('PlotMAF', 'plot histgram of maf'),
             )
@@ -162,6 +164,132 @@ def fetchLinkedSNPs(args):
     f.close()
     print('Job file has been generated. You can submit: sbatch -p jclarke %s.slurm'%output_prefix)
      
+
+def fetchGene(args):
+    """
+    %prog SNPlist gene.gff3 output_prefix
+
+    extract gene names
+    """
+    p = OptionParser(fetchGene.__doc__)
+    p.add_option('--header', default = 'yes', choices=('yes', 'no'),
+        help = 'specify if there is a header in your SNP list file')
+    p.add_option('--col_idx', default = '5',
+        help = 'specify the index of column including SNP names')
+    opts, args = p.parse_args(args)
+
+    if len(args) == 0:
+        sys.exit(not p.print_help())
+    SNPlist, gff, out_prefix, = args
+
+    df0 = pd.read_csv(SNPlist, delim_whitespace=True, header=None) \
+        if opts.header == 'no' \
+        else pd.read_csv(SNPlist, delim_whitespace=True)
+    coldx = int(opts.col_idx)
+    df0['chr'] = df0[df0.columns[coldx]].str.split('-').str.get(0).astype('int')
+    df0['pos'] = df0[df0.columns[coldx]].str.split('-').str.get(1).astype('int')
+    df0 = df0.sort_values(['chr', 'pos'])
+    df0 = df0[[df0.columns[coldx], 'chr', 'pos']]
+    df0.columns = ['snp', 'chr', 'pos']
+    df0 = df0.reset_index(drop=True)
+
+    df1 = pd.read_csv(gff, sep='\t', header=None)
+    df1['gene'] = df1.iloc[:,8].str.split('gene:').str.get(1).str.split(';').str.get(0)
+    df1 = df1[[0,3,4, 'gene']]
+    df1.columns = ['chr', 'start', 'end', 'gene']
+
+    f0 = open('%s.info'%out_prefix, 'w')
+    f1 = open('%s.genes'%out_prefix, 'w')
+
+    for g in df0.groupby('chr'):
+        chrom = str(g[0])
+        f0.write('Chromosome: %s\n'%chrom)
+        SNPs = g[1]['snp'].tolist()
+        f0.write('Causal SNPs(%s):\n %s\n'%(len(SNPs), ','.join(SNPs)))
+        Genes = []
+        for pos in g[1]['pos']:
+            #print('SNP position: %s'%pos)
+            df2 = df1[df1['chr'] == chrom]
+            df2['dist'] = np.abs(df2['end'] - df2['start'])
+            df2['st_dist'] = np.abs(pos - df2['start'])
+            df2['ed_dist'] = np.abs(pos - df2['end'])
+            min_idx_1, min_idx_2 = df2['st_dist'].idxmin(), df2['ed_dist'].idxmin()
+            min_val_1, min_val_2 = df2['st_dist'].min(), df2['ed_dist'].min()
+
+            if (min_idx_1 == min_idx_2) and \
+                (min_val_1 <=  df2.loc[min_idx_1, :]['dist']) and \
+                (min_val_2 <=  df2.loc[min_idx_1, :]['dist']):
+                gene = df2.loc[min_idx_1,'gene']
+                if gene in Genes:
+                    pass
+                else: 
+                    Genes.append(gene)
+            else:
+                if pos > df2.loc[min_idx_1, :][3]:
+                    gene = df2.loc[[min_idx_1, min_idx_1+1], 'gene'].tolist()
+                elif pos < df2.loc[min_idx_1, :][3]:
+                    gene = df2.loc[[min_idx_1-1, min_idx_1], 'gene'].tolist()
+                else:
+                    print('wrong position!!!')
+                for i in gene:
+                    if i in Genes:
+                        pass
+                    else: 
+                        Genes.append(i)
+        f0.write('Candidate genes(%s):\n %s\n\n'%(len(Genes), ','.join(Genes)))
+        
+        for  i in Genes:
+            f1.write(i+'\n')
+    f0.close()
+    f1.close()
+    print('Done! Check results:\n%s\n%s\n'%(out_prefix+'.info', out_prefix+'.genes'))
+
+def fetchFunc(args):
+    """
+    %prog GeneList FunctionFile output
+
+    extract gene functions
+    """
+    p = OptionParser(fetchFunc.__doc__)
+    opts, args = p.parse_args(args)
+
+    if len(args) == 0:
+        sys.exit(not p.print_help())
+    genelist, FuncFile, output, = args
+    cmd = 'grep -f %s %s > %s'%(genelist, FuncFile, output)
+    call(cmd, shell=True)
+    print('Done! Check file: %s'%output)
+    
+def fetchProSeq(args):
+    """
+    %prog GeneList seq_file output_prefix
+
+    extract protein sequences of candidate genes
+    """
+    p = OptionParser(fetchProSeq.__doc__)
+    opts, args = p.parse_args(args)
+
+    if len(args) == 0:
+        sys.exit(not p.print_help())
+    genelist, SeqFile, out_prefix, = args
+    cmd = "grep '>' %s|cut -d ' ' -f 1|cut -d '>' -f 2 > AllGene.names"%SeqFile
+    call(cmd, shell=True)
+
+    df_Genes = pd.read_csv(genelist, header=None)
+    df_Trans = pd.read_csv('AllGene.names', header=None)
+    df_Trans['gene'] = df_Trans[0].str.split('_').str.get(0)
+    df1 = df_Trans[df_Trans['gene'].isin(df_Genes[0])]
+    df1['gene'] = df1['gene'].astype('category')
+    df1['gene'].cat.set_categories(df_Genes[0].tolist(), inplace=True)
+    df2 = df1.sort_values(['gene',0]).reset_index(drop=True)
+    df2[0].to_csv('%s.ProSeq.names'%out_prefix, index=False, header=False)
+    
+    for i in list(df2[0]):
+        print('fetching %s'%i)
+        cmd = "%s %s %s >> %s"%(faOneRecord, SeqFile, i, out_prefix+'.seqs')
+        call(cmd, shell=True)
+    print('Done!')
+    
 
 def PlotEVs(args):
     """
