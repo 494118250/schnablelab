@@ -21,6 +21,7 @@ faOneRecord = op.abspath(op.dirname(__file__))+'/../apps/faOneRecord'
 def main():
     actions = (
         ('fetchMAF', 'calculate the MAFs of selected SNPs'),
+        ('topSNPs', 'fetch the first n significant SNPs'),
         ('fetchEVs', 'fetch effect sizes of selected SNPs'),
         ('fetchLinkedSNPs', 'fetch highly linked SNPs'),
         ('fetchGene', 'fetch genes of selected SNPs from significant SNP list'),
@@ -133,6 +134,36 @@ def fetchEVs(args):
     f1.close()
     print('see EVs.%s'%SNPlist)
 
+def topSNPs(args):
+    """
+    %prog gwas_results N
+    extract the first N significant SNPs from GWAS result
+    """
+    p = OptionParser(topSNPs.__doc__)
+    p.add_option('--software', default = 'gemma', choices=('gemma', 'gapit', 'farmcpu', 'mvp'),
+        help = 'specify which software generates the GWAS result')
+    opts, args = p.parse_args(args)
+
+    if len(args) == 0:
+        sys.exit(not p.print_help())
+
+    gwas, N, = args
+    if opts.software == 'gemma':
+        df = pd.read_csv(gwas, delim_whitespace=True, usecols=['chr', 'rs', 'ps', 'p_lrt', 'p_wald', 'p_score'])
+        df = df.sort_values('p_lrt').reset_index(drop=True)
+        df = df[['rs', 'chr', 'ps', 'p_lrt', 'p_wald', 'p_score']]
+        print(df.head(int(N)))
+    elif opts.software == 'farmcpu':
+        df = pd.read_csv(gwas, usecols=['SNP', 'Chromosome', 'Position', 'P.value'])
+        df = df.sort_values('P.value').reset_index(drop=True)
+        print(df.head(int(N)))
+    elif opts.software == 'gapit':
+        df = pd.read_csv(gwas, usecols=['SNP', 'Chromosome', 'Position ', 'P.value'])
+        df = df.sort_values('P.value').reset_index(drop=True)
+        print(df.head(int(N)))
+    else:
+        pass # for mvp
+        
 def fetchLinkedSNPs(args):
     """
     %prog SNPlist bed_prefix r2_cutoff output_prefix
@@ -141,7 +172,7 @@ def fetchLinkedSNPs(args):
     """
     p = OptionParser(fetchLinkedSNPs.__doc__)
     p.set_slurm_opts(array=False)
-    p.add_option('--header', default = 'no', choices=('yes', 'no'),
+    p.add_option('--header', default = 'yes', choices=('yes', 'no'),
         help = 'specify if there is a header in your SNP list file')
     opts, args = p.parse_args(args)
 
@@ -153,8 +184,9 @@ def fetchLinkedSNPs(args):
         if opts.header == 'no' \
         else pd.read_csv(SNPlist, delim_whitespace=True)
     SNPs = df.iloc[:, 0]
-    SNPsfile = SNPs.to_csv('SNPs_list.csv', index=False)
-    cmd = '%s --bfile %s --r2 --ld-snp-list SNPs_list.csv --ld-window-kb 5000 --ld-window 99999 --ld-window-r2 %s --noweb --out %s\n'%(plink, bedprefix, cutoff, output_prefix)
+    pre = SNPlist.split('.')[0]
+    SNPsfile = SNPs.to_csv('%s.SNPs_list.csv'%pre, index=False)
+    cmd = '%s --bfile %s --r2 --ld-snp-list %s.SNPs_list.csv --ld-window-kb 5000 --ld-window 99999 --ld-window-r2 %s --noweb --out %s\n'%(plink, bedprefix, pre, cutoff, output_prefix)
     print('command run on local:\n%s'%cmd)
     f = open('%s.slurm'%output_prefix, 'w')
     h = Slurm_header
@@ -174,8 +206,8 @@ def fetchGene(args):
     p = OptionParser(fetchGene.__doc__)
     p.add_option('--header', default = 'yes', choices=('yes', 'no'),
         help = 'specify if there is a header in your SNP list file')
-    p.add_option('--col_idx', default = '5',
-        help = 'specify the index of column including SNP names')
+    p.add_option('--col_idx', default = '3,4,5',
+        help = 'specify the index of Chr, Pos, SNP columns')
     opts, args = p.parse_args(args)
 
     if len(args) == 0:
@@ -185,12 +217,10 @@ def fetchGene(args):
     df0 = pd.read_csv(SNPlist, delim_whitespace=True, header=None) \
         if opts.header == 'no' \
         else pd.read_csv(SNPlist, delim_whitespace=True)
-    coldx = int(opts.col_idx)
-    df0['chr'] = df0[df0.columns[coldx]].str.split('-').str.get(0).astype('int')
-    df0['pos'] = df0[df0.columns[coldx]].str.split('-').str.get(1).astype('int')
+    cols = [df0.columns[int(i)] for i in opts.col_idx.split(',')]
+    df0 = df0[cols]
+    df0.columns = ['chr', 'pos', 'snp']
     df0 = df0.sort_values(['chr', 'pos'])
-    df0 = df0[[df0.columns[coldx], 'chr', 'pos']]
-    df0.columns = ['snp', 'chr', 'pos']
     df0 = df0.reset_index(drop=True)
 
     df1 = pd.read_csv(gff, sep='\t', header=None)
@@ -204,7 +234,7 @@ def fetchGene(args):
     for g in df0.groupby('chr'):
         chrom = str(g[0])
         f0.write('Chromosome: %s\n'%chrom)
-        SNPs = g[1]['snp'].tolist()
+        SNPs = list(g[1]['snp'].unique())
         f0.write('Causal SNPs(%s):\n %s\n'%(len(SNPs), ','.join(SNPs)))
         Genes = []
         for pos in g[1]['pos']:
