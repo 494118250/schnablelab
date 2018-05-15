@@ -20,7 +20,8 @@ tassel = op.abspath(op.dirname(__file__))+'/../apps/tassel-5-standalone/run_pipe
 def main():
     actions = (
         ('hmp2BIMBAM', 'transform hapmap format to BIMBAM format (GEMMA)'),
-        ('hmp2numeric', 'transform hapmap format to numeric format(gapit and farmcpu)'),
+        ('hmp2numRow', 'transform hapmap format to numeric format in rows(gapit and farmcpu), more memory'),
+        ('hmp2numCol', 'transform hapmap format to numeric format in columns(gapit and farmcpu), less memory'),
         ('hmp2MVP', 'transform hapmap format to MVP genotypic format'),
         ('hmp2ped', 'transform hapmap format to plink ped format'),
         ('nine2zero', 'replace -9 in the ped file generated from tassel to 0!!!'),
@@ -86,6 +87,41 @@ def hmp2BIMBAM(args):
     f2.close()
     f3.close()
 
+def hmp2numCol(args):
+    """
+    %prog hmp numeric_prefix
+    
+    Convert hmp genotypic data to numeric format in columns (*.GD and *.GM).
+    Memory efficient than numeric in rows
+    """
+    p = OptionParser(hmp2numCol.__doc__)
+    opts, args = p.parse_args(args)
+    
+    if len(args) == 0:
+        sys.exit(not p.print_help())
+    
+    hmp, num_pre = args
+    f1 = open(hmp)
+    header = f1.readline()
+    SMs = '\t'.join(header.split()[11:])+'\n'
+    f2 = open(num_pre+'.GD', 'w')
+    f2.write(SMs)
+    f3 = open(num_pre+'.GM', 'w')
+    f3.write('SNP\tChromosome\tPosition\n')
+    for i in f1:
+        j = i.split()
+        rs = j[0]
+        ref, alt = j[1].split('/')[0], j[1].split('/')[1]
+        newNUMs = judge(ref, alt, j[11:])
+        newline = '\t'.join(newNUMs)+'\n'
+        f2.write(newline)
+        pos = j[3]
+        chro = j[2]
+        f3.write('%s\t%s\t%s\n'%(rs, chro, pos))
+    f1.close()
+    f2.close()
+    f3.close()
+
 def hmp2MVP(args):
     """
     %prog hmp2MVP hmp MVP_prefix
@@ -117,13 +153,13 @@ def hmp2MVP(args):
     f2.close()
     f3.close()
 
-def hmp2numeric(args):
+def hmp2numRow(args):
     """
-    %prog hmp2numeric hmp numeric_prefix
+    %prog hmp numeric_prefix
     
-    Convert hmp genotypic data to numeric datasets (*.GD and *.GM).
+    Convert hmp genotypic data to numeric datasets in rows(*.GD and *.GM).
     """
-    p = OptionParser(hmp2numeric.__doc__)
+    p = OptionParser(hmp2numRow.__doc__)
     opts, args = p.parse_args(args)
 
     if len(args) == 0:
