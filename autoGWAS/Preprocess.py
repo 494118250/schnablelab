@@ -19,6 +19,7 @@ tassel = op.abspath(op.dirname(__file__))+'/../apps/tassel-5-standalone/run_pipe
 
 def main():
     actions = (
+        ('hmp2vcf', 'transform hapmap format to vcf format'),
         ('hmp2BIMBAM', 'transform hapmap format to BIMBAM format (GEMMA)'),
         ('hmp2numRow', 'transform hapmap format to numeric format in rows(gapit and farmcpu), more memory'),
         ('hmp2numCol', 'transform hapmap format to numeric format in columns(gapit and farmcpu), less memory'),
@@ -39,6 +40,27 @@ def main():
             )
     p = ActionDispatcher(actions)
     p.dispatch(globals())
+
+def hmp2vcf(args):
+    """
+    %prog hmp2vcf hmp
+    convert hmp to vcf format using tassel
+    """
+    p = OptionParser(hmp2vcf.__doc__)
+    p.set_slurm_opts(array=False)
+    opts, args = p.parse_args(args)
+    if len(args) == 0:
+        sys.exit(not p.print_help())
+    hmpfile, = args
+    prefix = '.'.join(hmpfile.split('.')[0:-1])
+    cmd = '%s -Xms512m -Xmx10G -fork1 -h %s -export -exportType VCF\n'%(tassel, hmpfile)
+    header = Slurm_header%(opts.time, opts.memory, opts.prefix, opts.prefix,opts.prefix)
+    header += 'module load java/1.8\n'
+    header += cmd
+    f = open('%s.hmp2vcf.slurm'%prefix, 'w')
+    f.write(header)
+    f.close()
+    print('slurm file %s.hmp2vcf.slurm has been created, you can sbatch your job file.'%prefix)
 
 def judge(ref, alt, genosList):
     newlist = []
@@ -455,7 +477,7 @@ def MAFandparalogous(row):
     """
     ref, alt = row[1].split('/')
     genos = row[11:]
-    refnum, altnum, refaltnum = (genos=='AA').sum(), (genos=='BB').sum(), (genos=='AB').sum()
+    refnum, altnum, refaltnum = (genos==ref*2).sum(), (genos==alt*2).sum(), (genos==ref+alt).sum()+(genos==alt+ref).sum()
     totalA = float((refnum + altnum + refaltnum)*2)
     #print(refnum, altnum, refaltnum)
     af1, af2 = (refnum*2 + refaltnum)/totalA, (altnum*2 + refaltnum)/totalA
@@ -473,10 +495,10 @@ def subsampling(args):
     In the SMs_file, please put sample name row by row, only the first column will be read. If file had multiple columns, use space or tab as the separator.
     """
     p = OptionParser(subsampling.__doc__)
-    p.add_option('--header', default=False,
+    p.add_option('--header', default='no',choices=('no', 'yes'),
         help = 'whether a header exist in your sample name file')
-    p.add_option('--filter', default=True,
-        help = 'if True, SNPs with maf <= 0.01 and paralogous SNPs (bad heterozygous) will be removed automatically')
+    p.add_option('--filter', default='yes',choices=('yes', 'no'),
+        help = 'if yes, SNPs with maf <= 0.01 and paralogous SNPs (bad heterozygous) will be removed automatically')
     opts, args = p.parse_args(args)
 
     if len(args) == 0:
@@ -487,23 +509,27 @@ def subsampling(args):
     SMs_df = pd.read_csv(SMs_file, delim_whitespace=True) \
         if opts.header \
         else pd.read_csv(SMs_file, delim_whitespace=True, header=None)
-    SMs_df = SMs_df.dropna(axis=0)
+    #SMs_df = SMs_df.dropna(axis=0)
     SMs = SMs_df.iloc[:,0].astype('str')
 
     hmp_header, hmp_SMs = hmp_df.columns[0:11].tolist(), hmp_df.columns[11:]
     
     excepSMs = SMs[~SMs.isin(hmp_SMs)]
     if len(excepSMs)>0:
-        print('Warning: could not find %s in original samples, proceed anyway. \
-            You may need to edit your phenotype file after finishing'%excepSMs)
-
+        print('Warning: could not find %s in hmp file, please make \
+sure all samples in your phenoytpes also can be found in hmp file'%excepSMs)
+        sys.exit()
     targetSMs = SMs[SMs.isin(hmp_SMs)].tolist()
     hmp_header.extend(targetSMs)
     new_hmp = hmp_df[hmp_header] 
-    TFs = new_hmp.apply(MAFandparalogous, axis=1)
-    final_hmp = new_hmp.loc[TFs] \
-        if opts.filter \
-        else new_hmp
+
+    if opts.filter == 'yes':
+        TFs = new_hmp.apply(MAFandparalogous, axis=1)
+        final_hmp = new_hmp.loc[TFs]
+    elif opts.filter == 'no':
+        final_hmp = new_hmp
+    else:
+        print('only yes or no!')
     final_hmp.to_csv('%s.hmp'%out_prefix, index=False, sep='\t')
 
 def downsampling(args):

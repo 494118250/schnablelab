@@ -59,6 +59,21 @@ myCV <- read.table("%s", head = TRUE)
 myFarmCPU <- FarmCPU(Y=myY, GD=myGD, GM=myGM, CV=myCV, method.bin="optimum", bin.size=c(5e5,5e6,5e7), bin.selection=seq(10,100,10), threshold.output=1, memo='%s')
 '''
 
+FarmCPUpp_header = '''
+library("bigmemory")
+library("biganalytics")
+library("compiler")
+source("http://zzlab.net/GAPIT/gapit_functions.txt")
+source("http://zzlab.net/FarmCPU/FarmCPU_functions.txt")
+setwd(".")
+myY <- read.table(system.file("extdata", "%s", package = "FarmCPUpp"), header = TRUE, stringsAsFactors = FALSE)
+myGM <- read.table(system.file("extdata", "%s.GM", package = "FarmCPUpp"),header = TRUE, stringsAsFactors = FALSE)
+myGD <- read.big.matrix(system.file("extdata", "%s.GD", package = "FarmCPUpp"),type = "double", sep = "\t", header = TRUE, col.names = myGM$SNP, ignore.row.names = FALSE, has.row.names = TRUE)
+myCV <- read.table("%s", head = TRUE)
+#Step 2: Run FarmCPU
+myFarmCPU <- FarmCPU(Y=myY, GD=myGD, GM=myGM, CV=myCV, method.bin="optimum", bin.size=c(5e5,5e6,5e7), bin.selection=seq(10,100,10), threshold.output=1, memo='%s')
+'''
+
 MSTMap_header = '''
 population_type RIL%s
 population_name original

@@ -125,7 +125,7 @@ def HeterMiss_Rate(args):
     p.add_option('--m_rate', default = 0.4, 
         help = 'specify the missing rate cutoff')
     p.add_option('--imputed', default = 'no', choices=('no', 'yes'), 
-        help = 'specify the missing rate cutoff')
+        help = 'specify if the vcf is imputed')
     p.set_slurm_opts(array=False)
     opts, args = p.parse_args(args)
     if len(args) == 0:
@@ -177,6 +177,7 @@ def MAF(args):
                 f1.write(i)
     f0.close()
     f1.close()
+    print('finised!!  check %s...'%new_f)
 
 def Bad_Indels(args):
     pass

@@ -65,12 +65,14 @@ def fetchMAF(args):
     """
     %prog SNPlist hmp
     
-    Calculate MAF of SNPs in a file where SNPs are listed row by row. Only first row were considered.
+    Calculate MAF of SNPs in a file where SNPs are listed row by row.
     If there are multiple columns, use space or tab as separators
     """
     p = OptionParser(fetchMAF.__doc__)
     p.add_option('--header', default = 'no', choices=('yes', 'no'),
         help = 'specify if there is a header in your SNP list file')
+    p.add_option('--col_idx', default = '0',
+        help = 'specify the SNP column')
     opts, args = p.parse_args(args)
     
     if len(args) == 0:
@@ -80,7 +82,7 @@ def fetchMAF(args):
     df = pd.read_csv(SNPlist, delim_whitespace=True, header=None) \
         if opts.header == 'no' \
         else pd.read_csv(SNPlist, delim_whitespace=True)
-    SNPs = df.iloc[:, 0]
+    SNPs = df.iloc[:, int(opts.col_idx)]
     SNPsfile = SNPs.to_csv('SNPs_list.csv', index=False)
     cmd = 'grep -f SNPs_list.csv %s > Genotypes_list.csv'%hmp
     call(cmd, shell=True)
@@ -109,6 +111,8 @@ def fetchEVs(args):
     p = OptionParser(fetchEVs.__doc__)
     p.add_option('--header', default = 'no', choices=('yes', 'no'),
         help = 'specify if there is a header in your SNP list file')
+    p.add_option('--col_idx', default = '0',
+        help = 'specify the SNP column')
     opts, args = p.parse_args(args)
 
     if len(args) == 0:
@@ -118,7 +122,7 @@ def fetchEVs(args):
     df = pd.read_csv(SNPlist, delim_whitespace=True, header=None) \
         if opts.header == 'no' \
         else pd.read_csv(SNPlist, delim_whitespace=True)
-    SNPs = df.iloc[:, 0]
+    SNPs = df.iloc[:, int(opts.col_idx)]
     SNPsfile = SNPs.to_csv('SNPs_list.csv', index=False)
     cmd = 'grep -f SNPs_list.csv %s > FarmCPU_list.csv'%farmResult
     call(cmd, shell=True)
@@ -148,19 +152,20 @@ def topSNPs(args):
         sys.exit(not p.print_help())
 
     gwas, N, = args
+    N = int(N)
     if opts.software == 'gemma':
-        df = pd.read_csv(gwas, delim_whitespace=True, usecols=['chr', 'rs', 'ps', 'p_lrt', 'p_wald', 'p_score'])
-        df = df.sort_values('p_lrt').reset_index(drop=True)
-        df = df[['rs', 'chr', 'ps', 'p_lrt', 'p_wald', 'p_score']]
-        print(df.head(int(N)))
+        df = pd.read_csv(gwas, delim_whitespace=True, usecols=['chr', 'rs', 'ps', 'p_score'])
+        df = df.sort_values('p_score').reset_index(drop=True)
+        df = df[['rs', 'chr', 'ps', 'p_score']]
+        df.iloc[0:N, :].to_csv('gemma.causalSNPs.csv', index=False, sep='\t')
     elif opts.software == 'farmcpu':
         df = pd.read_csv(gwas, usecols=['SNP', 'Chromosome', 'Position', 'P.value'])
         df = df.sort_values('P.value').reset_index(drop=True)
-        print(df.head(int(N)))
+        df.iloc[0:N, :].to_csv('farmcpu.causalSNPs.csv', index=False, sep='\t')
     elif opts.software == 'gapit':
         df = pd.read_csv(gwas, usecols=['SNP', 'Chromosome', 'Position ', 'P.value'])
         df = df.sort_values('P.value').reset_index(drop=True)
-        print(df.head(int(N)))
+        df.iloc[0:N, :].to_csv('gapit.causalSNPs.csv', index=False, sep='\t')
     else:
         pass # for mvp
         
@@ -195,7 +200,32 @@ def fetchLinkedSNPs(args):
     f.write(header)
     f.close()
     print('Job file has been generated. You can submit: sbatch -p jclarke %s.slurm'%output_prefix)
-     
+
+def fetchGeneInte(args):
+    """
+    %prog pos1-pos2 gene.gff3 output_prefix
+
+    extract gene names based on specified interval
+    """     
+    p = OptionParser(fetchGeneInte.__doc__)
+    opts, args = p.parse_args(args)
+
+    if len(args) == 0:
+        sys.exit(not p.print_help())
+    interval, gff, out_prefix, = args
+    st, ed = interval.split('-')
+    st, ed = int(st), int(ed)
+    
+
+
+
+
+
+
+
+
+
+
 
 def fetchGene(args):
     """
@@ -227,7 +257,6 @@ def fetchGene(args):
     df1['gene'] = df1.iloc[:,8].str.split('gene:').str.get(1).str.split(';').str.get(0)
     df1 = df1[[0,3,4, 'gene']]
     df1.columns = ['chr', 'start', 'end', 'gene']
-
     f0 = open('%s.info'%out_prefix, 'w')
     f1 = open('%s.genes'%out_prefix, 'w')
 
@@ -238,7 +267,7 @@ def fetchGene(args):
         f0.write('Causal SNPs(%s):\n %s\n'%(len(SNPs), ','.join(SNPs)))
         Genes = []
         for pos in g[1]['pos']:
-            #print('SNP position: %s'%pos)
+            print('SNP position: %s'%pos)
             df2 = df1[df1['chr'] == chrom]
             df2['dist'] = np.abs(df2['end'] - df2['start'])
             df2['st_dist'] = np.abs(pos - df2['start'])
