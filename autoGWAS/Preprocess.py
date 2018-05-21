@@ -388,7 +388,7 @@ def genPCA10(args):
         sys.exit(not p.print_help())
     hmp, = args
     out_prefix = hmp.replace('.hmp', '')
-    cmd = '%s -Xms18g -Xmx20g -fork1 -h %s -PrincipalComponentsPlugin -ncomponents 10 -covariance true -endPlugin -export 10PC.%s -runfork1'%(tassel, hmp, out_prefix)
+    cmd = '%s -Xms28g -Xmx29g -fork1 -h %s -PrincipalComponentsPlugin -ncomponents 10 -covariance true -endPlugin -export %s_10PCA -runfork1\n'%(tassel, hmp, out_prefix)
 
     h = Slurm_header
     h += 'module load java/1.8\n'
@@ -524,13 +524,14 @@ sure all samples in your phenoytpes also can be found in hmp file'%excepSMs)
     new_hmp = hmp_df[hmp_header] 
 
     if opts.filter == 'yes':
+        print('start filtering...')
         TFs = new_hmp.apply(MAFandparalogous, axis=1)
         final_hmp = new_hmp.loc[TFs]
     elif opts.filter == 'no':
         final_hmp = new_hmp
     else:
         print('only yes or no!')
-    final_hmp.to_csv('%s.hmp'%out_prefix, index=False, sep='\t')
+    final_hmp.to_csv('%s.hmp'%out_prefix, index=False, sep='\t', na_rep='NA')
 
 def downsampling(args):
     """
