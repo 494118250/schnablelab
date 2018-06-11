@@ -124,7 +124,7 @@ def Manhattan(args):
 
     df_grouped = df.groupby(by='chr')
     groupkeys = list(df_grouped.groups.keys())
-    #groupkeys = natsorted(groupkeys)
+    groupkeys = natsorted(groupkeys)
     print(groupkeys)
 
     for typePvalue in ('MinusLog10p_wald','MinusLog10p_lrt','MinusLog10p_score'):
@@ -135,6 +135,7 @@ def Manhattan(args):
         x_labels, x_labels_pos = [], []
         maxPos = 0
         for num,name in enumerate(groupkeys):
+            print(num, name)
             df1 = df_grouped.get_group(name).reset_index(drop=True)
             df1['xticks'] = df1['ps']+maxPos
             df1.plot(kind='scatter', x='xticks', y=typePvalue, s=4, color=colors[num % len(colors)], ax=ax)
@@ -165,7 +166,7 @@ def Manhattan(args):
         ax.set_ylabel(r'$\mathrm{-log_{10}(Pvalue)}$', fontsize=18, fontweight='bold')
         ax.set_title(title,  fontsize = 25, fontweight='bold')
         plt.savefig('Mantattan.%s.%s.png'%(title, typePvalue.split('10')[-1]))
-        plt.savefig('Mantattan.%s.%s.pdf'%(title, typePvalue.split('10')[-1]))
+        #plt.savefig('Mantattan.%s.%s.pdf'%(title, typePvalue.split('10')[-1]))
 
 
 if __name__ == "__main__":

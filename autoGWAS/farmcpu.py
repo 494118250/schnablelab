@@ -20,7 +20,7 @@ def main():
 
 def farmcpu(args):
     """
-    %prog farmcpu pheno(with header, tab delimited) geno_prefix(GM and GD prefix) PCA
+    %prog farmcpu pheno(with header, tab delimited) geno_prefix(GM(chr must be nums) and GD prefix) PCA
 
     Run automated FarmCPU
     """

@@ -65,14 +65,14 @@ def hmp2vcf(args):
 def judge(ref, alt, genosList):
     newlist = []
     for k in genosList:
-        if len(set(k))==1 and k[0] == ref:
-        #if k=='AA':
+        #if len(set(k))==1 and k[0] == ref:
+        if k=='AA':
             newlist.append('0')
-        elif len(set(k))==1 and k[0] == alt:
-        #elif k=='BB':
+        #elif len(set(k))==1 and k[0] == alt:
+        elif k=='BB':
             newlist.append('2')
-        elif len(set(k))==2 :
-        #elif k=='AB' :
+        #elif len(set(k))==2 :
+        elif k=='AB' :
             newlist.append('1')
         else:
             print 'genotype error !'

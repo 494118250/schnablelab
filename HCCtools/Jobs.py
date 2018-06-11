@@ -31,7 +31,7 @@ def submit(args):
     Submit part of job in the dir or all jobs
     """
     p = OptionParser(submit.__doc__)
-    p.add_option("--pattern", default="'*.slurm'", 
+    p.add_option("--pattern", default="*.slurm", 
                  help="specify the patter of your slurm job, remember to add quotes [default: %default]")
     p.add_option("--partition", default='jclarke', choices=('batch', 'jclarke'),
                 help = "choose which partition you are going to submit [default: %default]")
