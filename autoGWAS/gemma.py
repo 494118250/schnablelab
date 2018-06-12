@@ -124,8 +124,9 @@ def Manhattan(args):
 
     df_grouped = df.groupby(by='chr')
     groupkeys = list(df_grouped.groups.keys())
-    groupkeys = natsorted(groupkeys)
     print(groupkeys)
+    #groupkeys = natsorted(groupkeys)
+    #print(groupkeys)
 
     for typePvalue in ('MinusLog10p_wald','MinusLog10p_lrt','MinusLog10p_score'):
 

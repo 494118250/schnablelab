@@ -36,6 +36,7 @@ def main():
         ('reorgnzTasselPCA', 'reorganize PCA results from TASSEL so it can be used in other software'),
         ('reorgnzGemmaKinship', 'reorganize kinship results from GEMMA so it can be used in other software'),
         ('genGemmaPheno', 'reorganize normal phenotype format to GEMMA'),
+        ('ResidualPheno', 'generate residual phenotype from two associated phenotypes'),
         ('combineHmp', 'combine split chromosome Hmps to a single large one'),
             )
     p = ActionDispatcher(actions)
@@ -451,7 +452,7 @@ def genGemmaPheno(args):
     """
     %prog genGemmaPheno normalPheno
 
-    Change the phenotype format so that can be fed to GEMMA
+    Change the phenotype format so that can be fed to GEMMA (missing value will be changed to NA)
     """
     p = OptionParser(genGemmaPheno.__doc__)
     p.add_option('--header', default=True,
@@ -466,7 +467,7 @@ def genGemmaPheno(args):
         if opts.header==True \
         else pd.read_csv(normalPheno, sep=opts.sep, header=None)
     output = 'gemma.'+normalPheno
-    df.iloc[:,1].to_csv(output, index=False, header=False)
+    df.iloc[:,1].to_csv(output, index=False, header=False, na_rep='NA')
     print('Finished! %s has been generated.'%output)
 
 
@@ -587,6 +588,44 @@ def combineHmp(args):
             f.write(j)
         fn.close()
     f.close()
+
+def ResidualPheno(args):
+    from scipy.stats import linregress
+    import matplotlib.pyplot as plt
+    """
+    %prog ResidualPheno OriginalPheno(header, sep, name, pheno1, pheno2)
+
+    estimate the residual phenotypes from two origianl phenotypes
+    """
+    p = OptionParser(downsampling.__doc__)
+    opts, args = p.parse_args(args)
+
+    if len(args) == 0:
+        sys.exit(not p.print_help())
+
+    myfile, = args
+    df = pd.read_csv(myfile)
+    pheno1, pheno2 = df.iloc[:,1],df.iloc[:,2]
+
+    # plotting
+    fig, ax = plt.subplots()
+    ax.scatter(pheno1, pheno2,color='lightblue', s=50, alpha=0.8, edgecolors='0.3', linewidths=1)
+    slope, intercept, r_value, p_value, std_err = linregress(pheno1, pheno2)
+    y_pred = intercept + slope*pheno1
+    ax.plot(pheno1, y_pred, 'red', linewidth=1, label='Fitted line')
+    text_x = max(pheno1)*0.8
+    text_y = max(y_pred)
+    ax.text(text_x, text_y, r'${\mathrm{r^2}}$'+': %.2f'%r_value**2, fontsize=15, color='red')
+    xlabel, ylabel = df.columns[1], df.columns[2]
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    plt.savefig('%s_%s_r2.png'%(xlabel, ylabel))
+
+    # find residuals
+    df['y_1'] = y_pred
+    df['residuals'] = df[df.columns[2]]- df['y_1']
+    residual_pheno = df[[df.columns[0], df.columns[-1]]]
+    residual_pheno.to_csv('residual.csv', sep='\t', na_rep='NaN', index=False)
 
 if __name__ == '__main__':
     main()
