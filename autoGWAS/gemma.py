@@ -107,7 +107,7 @@ def Manhattan(args):
     p = OptionParser(Manhattan.__doc__)
     p.add_option('--pvalue', default=0.05, choices=(0.05, 0.01),
         help = 'choose the pvalue cutoff')
-    p.add_option('--multipletest', default='bonferroni', choices=('bonferroni', 'adjust-bonferroni', 'fdr'),
+    p.add_option('--multipletest', default='bonferroni', choices=('bonferroni', 'IndependentBonferroni', 'fdr'),
         help = 'choose the type of multiple test')
     p.add_option('--ylim', type = 'int',
         help = 'specify the ylim of the figure')
@@ -125,8 +125,8 @@ def Manhattan(args):
     df_grouped = df.groupby(by='chr')
     groupkeys = list(df_grouped.groups.keys())
     print(groupkeys)
-    #groupkeys = natsorted(groupkeys)
-    #print(groupkeys)
+    groupkeys = natsorted(groupkeys)
+    print(groupkeys)
 
     for typePvalue in ('MinusLog10p_wald','MinusLog10p_lrt','MinusLog10p_score'):
 
@@ -146,8 +146,8 @@ def Manhattan(args):
 
         if opts.multipletest == 'bonferroni':
             cutoff = -np.log10(opts.pvalue/len(df))
-        elif opts.multipletest == 'adjust-bonferroni':
-            pass
+        elif opts.multipletest == 'IndependentBonferroni':
+            cutoff = -np.log10(opts.pvalue/(len(df)*0.49))
         elif opts.multipletest == 'fdr':
             pass
 

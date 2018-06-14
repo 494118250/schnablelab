@@ -16,6 +16,7 @@ from subprocess import call
 gemma = op.abspath(op.dirname(__file__))+'/../apps/gemma'
 plink = op.abspath(op.dirname(__file__))+'/../apps/plink'
 tassel = op.abspath(op.dirname(__file__))+'/../apps/tassel-5-standalone/run_pipeline.pl'
+GEC = op.abspath(op.dirname(__file__))+'/../apps/gec.jar'
 
 def main():
     actions = (
@@ -25,7 +26,8 @@ def main():
         ('hmp2numCol', 'transform hapmap format to numeric format in columns(gapit and farmcpu), less memory'),
         ('hmp2MVP', 'transform hapmap format to MVP genotypic format'),
         ('hmp2ped', 'transform hapmap format to plink ped format'),
-        ('nine2zero', 'replace -9 in the ped file generated from tassel to 0!!!'),
+        ('PedNine2Zero', 'replace -9 in the ped file generated from tassel to 0!!!'),
+        ('FixPlinkMap', 'fix the chr names issue and Convert -9 to 0 in the plink map file'),
         ('ped2bed', 'convert plink ped format to binary bed format'),
         ('genKinship', 'using gemma to generate centered kinship matrix'),
         ('genPCA10', 'using tassel to generate the first 10 PCs'),
@@ -38,6 +40,7 @@ def main():
         ('genGemmaPheno', 'reorganize normal phenotype format to GEMMA'),
         ('ResidualPheno', 'generate residual phenotype from two associated phenotypes'),
         ('combineHmp', 'combine split chromosome Hmps to a single large one'),
+        ('IndePvalue', 'calculate the number of independent SNPs and estiamte the bonferroni p value'),
             )
     p = ActionDispatcher(actions)
     p.dispatch(globals())
@@ -275,13 +278,13 @@ def hmp2ped(args):
     f.close()
     print('Job file has been created. You can submit: sbatch -p jclarke %s.hmp2ped.slurm'%prefix)
 
-def nine2zero(args):
+def PedNine2Zero(args):
     """
     %prog old_ped new_ped
 
     Convert -9 to 0 in the ped genotype file
     """
-    p = OptionParser(nine2zero.__doc__)
+    p = OptionParser(PedNine2Zero.__doc__)
     opts, args = p.parse_args(args)
     if len(args) == 0:
         sys.exit(not p.print_help())
@@ -291,6 +294,29 @@ def nine2zero(args):
     for i in f:
         j = i.replace('-9\t', '0\t')
         f1.write(j)
+    f.close()
+    f1.close()
+    print('Done!')
+
+def FixPlinkMap(args):
+    """
+    %prog old_map new_map
+
+    fix the chr names issue and Convert -9 to 0 in the plink map file
+    """
+    p = OptionParser(FixPlinkMap.__doc__)
+    opts, args = p.parse_args(args)
+    if len(args) == 0:
+        sys.exit(not p.print_help())
+    old_map, new_map,  = args
+    f = open(old_map)
+    f1 = open(new_map, 'w')
+    for i in f:
+        j = i.split()
+        Chr = j[1].split('_')[1]
+        new_l = '%s\t%s\t0\t%s\n'%(Chr, j[1], j[3])
+        
+        f1.write(new_l)
     f.close()
     f1.close()
     print('Done!')
@@ -626,6 +652,34 @@ def ResidualPheno(args):
     df['residuals'] = df[df.columns[2]]- df['y_1']
     residual_pheno = df[[df.columns[0], df.columns[-1]]]
     residual_pheno.to_csv('residual.csv', sep='\t', na_rep='NaN', index=False)
+
+def IndePvalue(args):
+    """
+    %prog IndePvalue plink_bed_prefix
+
+    calculate the number of independent SNPs (Me) and the bonferroni pvalue
+    """
+    p = OptionParser(IndePvalue.__doc__)
+    p.set_slurm_opts(array=False)
+    p.add_option('--cutoff', default = '0.05', choices=('0.01', '0.05'),
+        help = 'choose the pvalue cutoff for the calculation of bonferroni pvalue')
+    opts, args = p.parse_args(args)
+    if len(args) == 0:
+        sys.exit(not p.print_help())
+
+    bed, = args
+    mem = int(opts.memory)/1000 - 2
+    cmd = 'java -Xmx%sg -jar %s --noweb --effect-number --plink-binary %s --genome --out test1'%(mem, GEC, bed)
+    
+    h = Slurm_header
+    h += 'module load java/1.8\n'
+    header = h%(opts.time, opts.memory, opts.prefix, opts.prefix, opts.prefix)
+    header += cmd
+    f = open('test1.Me_SNP.slurm', 'w')
+    f.write(header)
+    f.close()
+    print('slurm file test1.Me_SNP.slurm has been created, you can sbatch your job file.')
+
 
 if __name__ == '__main__':
     main()
