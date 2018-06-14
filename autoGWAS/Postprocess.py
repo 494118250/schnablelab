@@ -24,6 +24,7 @@ def main():
         ('topSNPs', 'fetch the first n significant SNPs'),
         ('fetchEVs', 'fetch effect sizes of selected SNPs'),
         ('fetchLinkedSNPs', 'fetch highly linked SNPs'),
+        ('fetchGenoVCF', 'fetch genotypes for SNPs from vcf file'),
         ('fetchGene', 'fetch genes of selected SNPs from significant SNP list'),
         ('fetchFunc', 'fetch functions of candidate genes'),
         ('fetchProSeq', 'fetch corresponding sequences of condidated genes'),
@@ -154,9 +155,9 @@ def topSNPs(args):
     gwas, N, = args
     N = int(N)
     if opts.software == 'gemma':
-        df = pd.read_csv(gwas, delim_whitespace=True, usecols=['chr', 'rs', 'ps', 'p_score'])
-        df = df.sort_values('p_score').reset_index(drop=True)
-        df = df[['rs', 'chr', 'ps', 'p_score']]
+        df = pd.read_csv(gwas, delim_whitespace=True, usecols=['chr', 'rs', 'ps', 'p_lrt'])
+        df = df.sort_values('p_lrt').reset_index(drop=True)
+        df = df[['rs', 'chr', 'ps', 'p_lrt']]
         df.iloc[0:N, :].to_csv('gemma.causalSNPs.csv', index=False, sep='\t')
     elif opts.software == 'farmcpu':
         df = pd.read_csv(gwas, usecols=['SNP', 'Chromosome', 'Position', 'P.value'])
@@ -171,7 +172,7 @@ def topSNPs(args):
         
 def fetchLinkedSNPs(args):
     """
-    %prog SNPlist bed_prefix r2_cutoff output_prefix
+    %prog SNPlist(only read 1st col) bed_prefix r2_cutoff output_prefix
 
     extract linked SNPs using plink
     """
@@ -201,31 +202,45 @@ def fetchLinkedSNPs(args):
     f.close()
     print('Job file has been generated. You can submit: sbatch -p jclarke %s.slurm'%output_prefix)
 
-def fetchGeneInte(args):
+def fetchGenoVCF(args):
     """
-    %prog pos1-pos2 gene.gff3 output_prefix
+    %prog SNP_list_file VCF output
 
-    extract gene names based on specified interval
+    extract genotypes for a buch of SNPs from VCF
     """     
-    p = OptionParser(fetchGeneInte.__doc__)
+    p = OptionParser(fetchGenoVCF.__doc__)
+    p.add_option('--header', default = 'yes', choices=('yes', 'no'),
+        help = 'specify if there is a header in your SNP list file')
+    p.add_option('--column', default = '0',
+        help = 'specify which column is your SNP column 0-based')
     opts, args = p.parse_args(args)
-
     if len(args) == 0:
         sys.exit(not p.print_help())
-    interval, gff, out_prefix, = args
-    st, ed = interval.split('-')
-    st, ed = int(st), int(ed)
+    snplist,vcf,output, = args
+
+    df = pd.read_csv(snplist, delim_whitespace=True) \
+        if opts.header=='yes' \
+        else pd.read_csv(snplist, delim_whitespace=True, header=None)
+    SNPs = df.iloc[:,int(opts.column)]
+    SNP_keys = '\t'+SNPs+'\t'
+    SNP_keys.to_csv('SNP_keys.csv', index=False)
     
+    cmd = 'grep -f SNP_keys.csv %s > SNPs_keys.tmp.vcf'%(vcf)
+    f_vcf = open(vcf)
+    for i in f_vcf:
+        if i.startswith('#CHROM\tPOS'):
+           vcf_head = i
+           break
+    df_header = vcf_head.split()
 
-
-
-
-
-
-
-
-
-
+    df_geno = pd.read_csv('SNPs_keys.tmp.vcf', delim_whitespace=True, header=None)
+    df_geno.columns = df_header
+    df_geno0 = df_geno[['#CHROM','POS','ID','REF','ALT']]
+    df_geno1 = df_geno[df_geno.columns[9:]]
+    df_geno2 = df_geno1.applymap(lambda x: x.split(':')[0])
+    df_geno_final = pd.concat([df_geno0, df_geno2], axis=1)
+    df_geno_final.to_csv(output, index=False)
+    print('check results: SNP_keys.csv, SNPs_keys.tmp.vcf, %s'%output)
 
 def fetchGene(args):
     """
