@@ -199,7 +199,7 @@ def SNPsCall(args):
     %prog SNPsCall ref info
     create the index for bam files
     """
-    p = OptionParser(IndexBam.__doc__)
+    p = OptionParser(SNPsCall.__doc__)
     p.set_slurm_opts(array=False)
     opts, args = p.parse_args(args)
     if len(args) == 0:
@@ -216,7 +216,7 @@ def SNPsCall(args):
     chrlist = [i.rstrip() for i in f2]
     for seq in chrlist:
         cmd = '/work/schnablelab/cmiao/SorghumGWAS/scripts/freebayes/bin/freebayes -r %s -f %s -C 1 -L bamfiles.fb.list > %s\n'%(seq, ref, "_".join(seq.split(':'))+'.vcf')
-        header = Slurm_header%(opts.time, opts.memory, SM, SM, SM)
+        header = Slurm_header%(opts.time, opts.memory, seq, seq, seq)
         header += cmd
         jobfile = '%s.fb.slurm'%("_".join(seq.split(':')))
         f = open(jobfile, 'w')
