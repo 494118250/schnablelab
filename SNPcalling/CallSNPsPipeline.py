@@ -56,7 +56,7 @@ def CombineRep(args):
     f = open('CombineFQs.slurm'%prefix, 'w')
     f.write(header)
     f.close()
-    print('slurm file CombineFQs.slurm has been created, you can sbatch your job file.'%prefix)
+    print('slurm file CombineFQs.slurm has been created, you can sbatch your job file.')
 
 
 def Trim(args):
@@ -76,14 +76,14 @@ def Trim(args):
         sm = i.split('.')[0]
         cmd1 = 'java -jar $TM_HOME/trimmomatic.jar SE %s %s CROP:185 SLIDINGWINDOW:4:15 MINLEN:30'%(i, sm+'.trimed.fq\n')
         cmd2 = 'gzip %s'%(sm+'.trimed.fq\n')
-        header = Slurm_header%(opts.time, opts.memory, opts.prefix, opts.prefix,opts.prefix)
+        header = Slurm_header%(opts.time, opts.memory, SM, SM, SM)
         header += cmd1
         header += cmd2
         jobfile = '%s.trimc.slurm'%sm
         f = open(jobfile, 'w')
         f.write(header)
         f.close()
-    print('slurm files *.trimed.slurm has been created, you can sbatch your job file.'%prefix)
+    print('slurm files *.trimed.slurm has been created, you can sbatch your job file.')
         
 
 def Align(args):
@@ -108,19 +108,19 @@ def Align(args):
         cmd = 'bwa mem -R %s %s %s > %s \n'%(R, '/work/schnablelab/cmiao/SorghumGWAS/shared_files/references/Sbicolor_313_v3.0.fa', i, samoutput)\
             if opts.RefVersion == '3'\
             else 'bwa mem -R %s %s %s > %s \n'%(R, '/work/schnablelab/cmiao/SorghumGWAS/shared_files/references/Sbicolor_79.fa', i, samoutput)
-        header = Slurm_header%(opts.time, opts.memory, opts.prefix, opts.prefix,opts.prefix)
+        header = Slurm_header%(opts.time, opts.memory, SM, SM, SM)
         header += cmd1
         jobfile = '%s.bwa.slurm'%SM
         f = open(jobfile, 'w')
         f.write(header)
         f.close()
-    print('slurm files *.bwa.slurm has been created, you can sbatch your job file.'%prefix)
+    print('slurm files *.bwa.slurm has been created, you can sbatch your job file.')
         
         
 def Sam2Bam(args):
     """
     %prog Sam2Bam dir
-    Align reads to genome
+    Convert sam to bam format
     """
     p = OptionParser(Sam2Bam.__doc__)
     p.set_slurm_opts(array=False)
@@ -134,13 +134,14 @@ def Sam2Bam(args):
         SM = i.split('.')[0]
         output = '%s.bam'%SM
         cmd = 'samtools view -bS %s > %s\n'%(i, output)
-        header = Slurm_header%(opts.time, opts.memory, opts.prefix, opts.prefix,opts.prefix)
+        header = Slurm_header%(opts.time, opts.memory, SM, SM, SM)
+        header += 'module load samtools/0.1\n'
         header += cmd
         jobfile = '%s.sam2bam.slurm'%SM
         f = open(jobfile, 'w')
         f.write(header)
         f.close()
-    print('slurm files *.sam2bam.slurm has been created, you can sbatch your job file.'%prefix)
+    print('slurm files *.sam2bam.slurm has been created, you can sbatch your job file.')
     
 def SortBam(args):
     """
@@ -159,13 +160,14 @@ def SortBam(args):
         SM = i.split('.')[0]
         output = '%s.sorted'%SM
         cmd = 'samtools sort %s %s\n'%(i, output)
-        header = Slurm_header%(opts.time, opts.memory, opts.prefix, opts.prefix,opts.prefix)
+        header = Slurm_header%(opts.time, opts.memory, SM, SM, SM)
+        header += 'module load samtools/0.1\n'
         header += cmd
         jobfile = '%s.sortbam.slurm'%SM
         f = open(jobfile, 'w')
         f.write(header)
         f.close()
-    print('slurm files *.sortbam.slurm has been created, you can sbatch your job file.'%prefix)
+    print('slurm files *.sortbam.slurm has been created, you can sbatch your job file.')
 
 def IndexBam(args):
     """
@@ -183,13 +185,14 @@ def IndexBam(args):
     for i in allfiles:
         SM = i.split('.')[0]
         cmd = 'samtools index %s\n'%i
-        header = Slurm_header%(opts.time, opts.memory, opts.prefix, opts.prefix,opts.prefix)
+        header = Slurm_header%(opts.time, opts.memory, SM, SM, SM)
+        header += 'module load samtools/0.1\n'
         header += cmd
         jobfile = '%s.idx.slurm'%SM
         f = open(jobfile, 'w')
         f.write(header)
         f.close()
-    print('slurm files *.idx.slurm has been created, you can sbatch your job file.'%prefix)
+    print('slurm files *.idx.slurm has been created, you can sbatch your job file.')
     
 def SNPsCall(args):
     """
@@ -213,13 +216,13 @@ def SNPsCall(args):
     chrlist = [i.rstrip() for i in f2]
     for seq in chrlist:
         cmd = '/work/schnablelab/cmiao/SorghumGWAS/scripts/freebayes/bin/freebayes -r %s -f %s -C 1 -L bamfiles.fb.list > %s\n'%(seq, ref, "_".join(seq.split(':'))+'.vcf')
-        header = Slurm_header%(opts.time, opts.memory, opts.prefix, opts.prefix,opts.prefix)
+        header = Slurm_header%(opts.time, opts.memory, SM, SM, SM)
         header += cmd
         jobfile = '%s.fb.slurm'%("_".join(seq.split(':')))
         f = open(jobfile, 'w')
         f.write(header)
         f.close()
-    print('slurm files *.fb.slurm has been created, you can sbatch your job file.'%prefix)
+    print('slurm files *.fb.slurm has been created, you can sbatch your job file.')
 
 if __name__ == "__main__":
     main()
