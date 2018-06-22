@@ -15,6 +15,7 @@ from JamesLab.apps.header import Slurm_header
 
 def main():
     actions = (
+        ('Preprocess', 'filter the number of ALT, quality score, MAF, missing rate, variant type, reclibrate position, split msnp to snp.'),
         ('NUM_ALT', 'filter number of alternative SNPs'),
         ('Miss_Rate', 'filter missing rate'),
         ('HeterMiss_Rate', 'filter SNPs with high heterozygous and missing rates'),
@@ -24,6 +25,35 @@ def main():
 )
     p = ActionDispatcher(actions)
     p.dispatch(globals())
+
+def Preprocess(args):
+    """
+    %prog Preprocess dir
+    1, Only keep variants: number of ALT==1, quality score >=10, AMF>=0.01, missing rate>0.3, type is snp. 
+    2, split msnp to snps.
+    """
+    p = OptionParser(Preprocess.__doc__)
+    p.set_slurm_opts(array=False)
+    opts, args = p.parse_args(args)
+
+    if len(args) == 0:
+        sys.exit(not p.print_help())
+    mydir, = args
+
+    allfiles = [i for i in os.listdir('.') if i.endswith('.vcf')]
+    print 'Total %s .vcf files'%len(allfiles)
+    for i in allfiles:
+        SM = i.split('.')[0]
+        cmd = "bcftools view -i 'N_ALT==1 && QUAL>=10 && MAF>=0.01 && NS/N_SAMPLES > 0.3' -v 'snps' %s | bcftools -m -snps > %s.prprcss.vcf"%(i, SM)
+        jobfile = '%s.PreprocessVCF.slurm'%SM
+        f = open(jobfile, 'w')
+        header = Slurm_header%(opts.time, opts.memory, SM, SM, SM)
+        header += 'module load bcftools\n'
+        header += cmd
+        f.write(header)
+        f.close()
+    print('slurm file %s.PreprocessVCF.slurm has been created, now you can sbatch your job files.'%SM)
+
 
 def Subsampling(args):
     """
