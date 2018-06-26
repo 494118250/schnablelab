@@ -94,12 +94,7 @@ def Manhattan(args):
     import matplotlib.pyplot as plt
     import matplotlib
 
-    #matplotlib.style.use('ggplot')
-    # Get current size
     fig_size = plt.rcParams["figure.figsize"]
-    # Prints: [8.0, 6.0]
-    #print "Current size:", fig_size
-    # Set figure width to 12 and height to 9
     fig_size[0] = 14
     fig_size[1] = 8
     plt.rcParams["figure.figsize"] = fig_size
@@ -116,59 +111,51 @@ def Manhattan(args):
     if len(args) == 0:
         sys.exit(not p.print_help())
     GWASresult, title = args
-    fields = ['chr', 'ps', 'p_wald', 'p_lrt', 'p_score']
+
+    fields = ['chr', 'ps',  'p_lrt']
     df = pd.read_csv(GWASresult, delim_whitespace=True, usecols=fields)
-    df['MinusLog10p_wald'] = -np.log10(df['p_wald'])
-    df['MinusLog10p_lrt'] = -np.log10(df['p_lrt'])
-    df['MinusLog10p_score'] = -np.log10(df['p_score'])
+    df['p_lrt'] = -np.log10(df['p_lrt'])
 
     df_grouped = df.groupby(by='chr')
     groupkeys = list(df_grouped.groups.keys())
+    #groupkeys = natsorted(groupkeys)
     print(groupkeys)
-    groupkeys = natsorted(groupkeys)
-    print(groupkeys)
 
-    for typePvalue in ('MinusLog10p_wald','MinusLog10p_lrt','MinusLog10p_score'):
-
-        fig1 = plt.figure()
-        ax = fig1.add_subplot(111)
-        colors = ['C0','C1','C2','C3','C4']
-        x_labels, x_labels_pos = [], []
-        maxPos = 0
-        for num,name in enumerate(groupkeys):
-            print(num, name)
-            df1 = df_grouped.get_group(name).reset_index(drop=True)
-            df1['xticks'] = df1['ps']+maxPos
-            df1.plot(kind='scatter', x='xticks', y=typePvalue, s=4, color=colors[num % len(colors)], ax=ax)
-            maxPos += df1['ps'].max()
-            x_labels.append('Chr_%s'%(num+1))
-            x_labels_pos.append((df1['xticks'].iloc[-1] - (df1['xticks'].iloc[-1] - df1['xticks'].iloc[0])/2))
-
-        if opts.multipletest == 'bonferroni':
-            cutoff = -np.log10(opts.pvalue/len(df))
-        elif opts.multipletest == 'IndependentBonferroni':
-            cutoff = -np.log10(opts.pvalue/(len(df)*0.49))
-        elif opts.multipletest == 'fdr':
-            pass
-
-        ax.axhline(cutoff)
-        ax.set_xticks(x_labels_pos)
-        ax.set_xticklabels(x_labels, fontsize='14',  fontweight='bold')
-        ylim = opts.ylim \
-            if opts.ylim \
-            else np.ceil(df[typePvalue].max())+ .5
-        ax.set_yticks(np.arange(0,ylim))
-        ylabels = [str(int(i)) for i in np.arange(0,ylim)]
-        ax.set_yticklabels(ylabels, fontsize='14',  fontweight='bold')
-        patch = maxPos/120.0
-        ax.set_xlim([-patch, maxPos+patch])
-        ax.set_ylim(0, ylim)
-        ax.set_xlabel('Chromosome', fontsize=20, fontweight='bold')
-        ax.set_ylabel(r'$\mathrm{-log_{10}(Pvalue)}$', fontsize=18, fontweight='bold')
-        ax.set_title(title,  fontsize = 25, fontweight='bold')
-        plt.savefig('Mantattan.%s.%s.png'%(title, typePvalue.split('10')[-1]))
-        #plt.savefig('Mantattan.%s.%s.pdf'%(title, typePvalue.split('10')[-1]))
-
+    fig1 = plt.figure()
+    ax = fig1.add_subplot(111)
+    colors = ['C0','C1','C2','C3','C4']
+    x_labels, x_labels_pos = [], []
+    maxPos = 0
+    for num,name in enumerate(groupkeys):
+        print(num, name)
+        df1 = df_grouped.get_group(name).reset_index(drop=True)
+        df1['xticks'] = df1['ps']+maxPos
+        df1.plot(kind='scatter', x='xticks', y='p_lrt', s=5, color=colors[num % len(colors)], ax=ax)
+        maxPos += df1['ps'].max()
+        x_labels.append('Chr_%s'%(num+1))
+        x_labels_pos.append((df1['xticks'].iloc[-1] - (df1['xticks'].iloc[-1] - df1['xticks'].iloc[0])/2))
+      
+    if opts.multipletest == 'bonferroni':
+        cutoff = -np.log10(opts.pvalue/len(df))
+    elif opts.multipletest == 'IndependentBonferroni':
+        cutoff = -np.log10(opts.pvalue/(len(df)*0.32))
+    ax.axhline(cutoff)
+    ax.set_xticks(x_labels_pos)
+    ax.set_xticklabels(x_labels, fontsize='14',  fontweight='bold')
+    ylim = opts.ylim \
+        if opts.ylim \
+        else np.ceil(df['p_lrt'].max())+ .5
+        
+    ax.set_yticks(np.arange(0,ylim))
+    ylabels = [str(int(i)) for i in np.arange(0,ylim)]
+    ax.set_yticklabels(ylabels, fontsize='14',  fontweight='bold')
+    patch = maxPos/120.0
+    ax.set_xlim([-patch, maxPos+patch])
+    ax.set_ylim(0, ylim)
+    ax.set_xlabel('Chromosome', fontsize=20, fontweight='bold')
+    ax.set_ylabel(r'$\mathrm{-log_{10}(Pvalue)}$', fontsize=18, fontweight='bold')
+    ax.set_title(title,  fontsize = 25, fontweight='bold')
+    plt.savefig('Mantattan.lrt.%s.png'%title)
 
 if __name__ == "__main__":
     main()

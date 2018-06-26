@@ -655,7 +655,7 @@ def ResidualPheno(args):
 
 def IndePvalue(args):
     """
-    %prog IndePvalue plink_bed_prefix
+    %prog IndePvalue plink_bed_prefix output
 
     calculate the number of independent SNPs (Me) and the bonferroni pvalue
     """
@@ -667,18 +667,17 @@ def IndePvalue(args):
     if len(args) == 0:
         sys.exit(not p.print_help())
 
-    bed, = args
+    bed,output = args
     mem = int(opts.memory)/1000 - 2
-    cmd = 'java -Xmx%sg -jar %s --noweb --effect-number --plink-binary %s --genome --out test1'%(mem, GEC, bed)
-    
+    cmd = 'java -Xmx%sg -jar %s --noweb --effect-number --plink-binary %s --genome --out %s'%(mem, GEC, bed, output)
     h = Slurm_header
     h += 'module load java/1.8\n'
     header = h%(opts.time, opts.memory, opts.prefix, opts.prefix, opts.prefix)
     header += cmd
-    f = open('test1.Me_SNP.slurm', 'w')
+    f = open('%s.Me_SNP.slurm'%output, 'w')
     f.write(header)
     f.close()
-    print('slurm file test1.Me_SNP.slurm has been created, you can sbatch your job file.')
+    print('slurm file %s.Me_SNP.slurm has been created, you can sbatch your job file.'%output)
 
 
 if __name__ == '__main__':

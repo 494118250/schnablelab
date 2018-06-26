@@ -21,7 +21,7 @@ faOneRecord = op.abspath(op.dirname(__file__))+'/../apps/faOneRecord'
 def main():
     actions = (
         ('fetchMAF', 'calculate the MAFs of selected SNPs'),
-        ('topSNPs', 'fetch the first n significant SNPs'),
+        ('SigSNPs', 'fetch the first n significant SNPs'),
         ('fetchEVs', 'fetch effect sizes of selected SNPs'),
         ('fetchLinkedSNPs', 'fetch highly linked SNPs'),
         ('fetchGenoVCF', 'fetch genotypes for SNPs from vcf file'),
@@ -139,36 +139,50 @@ def fetchEVs(args):
     f1.close()
     print('see EVs.%s'%SNPlist)
 
-def topSNPs(args):
+def SigSNPs(args):
     """
-    %prog gwas_results N
-    extract the first N significant SNPs from GWAS result
+    %prog gwas_results output 
+    extract the first N significant SNPs from GWAS result. The results will be saved to software.causalSNPs.csv
     """
-    p = OptionParser(topSNPs.__doc__)
+    p = OptionParser(SigSNPs.__doc__)
+    p.add_option('--MeRatio', default = '1',
+        help = "specify the ratio of independent SNPs, maize is 0.32, sorghum is 0.53")
+    p.add_option('--chromosome', default = 'all',
+        help = "specify chromosome, such 1, 2. 'all' means genome level")
     p.add_option('--software', default = 'gemma', choices=('gemma', 'gapit', 'farmcpu', 'mvp'),
         help = 'specify which software generates the GWAS result')
     opts, args = p.parse_args(args)
 
     if len(args) == 0:
         sys.exit(not p.print_help())
-
-    gwas, N, = args
-    N = int(N)
+    gwas,output, = args
     if opts.software == 'gemma':
         df = pd.read_csv(gwas, delim_whitespace=True, usecols=['chr', 'rs', 'ps', 'p_lrt'])
-        df = df.sort_values('p_lrt').reset_index(drop=True)
+        cutoff = 0.05/(float(opts.MeRatio) * df.shape[0])
+        print('significant cutoff: %s'%cutoff)
+        df['chr'] = df['chr'].astype('str')
+        df = df if opts.chromosome=='all' else df[df['chr']==opts.chromosome]
         df = df[['rs', 'chr', 'ps', 'p_lrt']]
-        df.iloc[0:N, :].to_csv('gemma.causalSNPs.csv', index=False, sep='\t')
+        df[df['p_lrt'] < cutoff].to_csv(output, index=False, sep='\t')
+
     elif opts.software == 'farmcpu':
         df = pd.read_csv(gwas, usecols=['SNP', 'Chromosome', 'Position', 'P.value'])
-        df = df.sort_values('P.value').reset_index(drop=True)
-        df.iloc[0:N, :].to_csv('farmcpu.causalSNPs.csv', index=False, sep='\t')
+        cutoff = 0.05/(float(opts.MeRatio) * df.shape[0])
+        print('significant cutoff: %s'%cutoff)
+        df['Chromosome'] = df['Chromosome'].astype('str')
+        df = df if opts.chromosome=='all' else df[df['chr']==opts.chromosome]
+        df[df['P.value'] < cutoff].to_csv(output, index=False, sep='\t')
+
     elif opts.software == 'gapit':
         df = pd.read_csv(gwas, usecols=['SNP', 'Chromosome', 'Position ', 'P.value'])
-        df = df.sort_values('P.value').reset_index(drop=True)
-        df.iloc[0:N, :].to_csv('gapit.causalSNPs.csv', index=False, sep='\t')
+        cutoff = 0.05/(float(opts.MeRatio) * df.shape[0])
+        print('significant cutoff: %s'%cutoff)
+        df['Chromosome'] = df['Chromosome'].astype('str')
+        df = df if opts.chromosome=='all' else df[df['chr']==opts.chromosome]
+        df[df['P.value'] < cutoff].to_csv(output, index=False, sep='\t')
     else:
         pass # for mvp
+    print('Done! Check %s'%output)
         
 def fetchLinkedSNPs(args):
     """
@@ -224,14 +238,21 @@ def fetchGenoVCF(args):
     SNPs = df.iloc[:,int(opts.column)]
     SNP_keys = '\t'+SNPs+'\t'
     SNP_keys.to_csv('SNP_keys.csv', index=False)
-    
-    cmd = 'grep -f SNP_keys.csv %s > SNPs_keys.tmp.vcf'%(vcf)
-    f_vcf = open(vcf)
-    for i in f_vcf:
-        if i.startswith('#CHROM\tPOS'):
-           vcf_head = i
-           break
-    df_header = vcf_head.split()
+    print('grep keys generated: SNP_keys.csv')
+ 
+    cmd1 = 'zgrep -f SNP_keys.csv %s > SNPs_keys.tmp.vcf'%(vcf) \
+        if vcf.endswith('gz')\
+        else 'grep -f SNP_keys.csv %s > SNPs_keys.tmp.vcf'%(vcf)
+    call(cmd1, shell=True)
+    print('grep vcf done: SNPs_keys.tmp.vcf')
+
+    cmd2 = "zgrep -m 1 -P '#CHROM\tPOS' %s > header.vcf"%(vcf) \
+        if vcf.endswith('gz')\
+        else "zgrep -m 1 -P '#CHROM\tPOS' %s > header.vcf"%(vcf)
+    call(cmd2, shell=True)
+    vcf_header = open('header.vcf')
+    df_header = vcf_header.readline().split()
+    print('header done: header.vcf')
 
     df_geno = pd.read_csv('SNPs_keys.tmp.vcf', delim_whitespace=True, header=None)
     df_geno.columns = df_header
@@ -240,7 +261,7 @@ def fetchGenoVCF(args):
     df_geno2 = df_geno1.applymap(lambda x: x.split(':')[0])
     df_geno_final = pd.concat([df_geno0, df_geno2], axis=1)
     df_geno_final.to_csv(output, index=False)
-    print('check results: SNP_keys.csv, SNPs_keys.tmp.vcf, %s'%output)
+    print('genotype processing done: %s'%output)
 
 def fetchGene(args):
     """
