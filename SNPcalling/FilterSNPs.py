@@ -15,7 +15,7 @@ from JamesLab.apps.header import Slurm_header
 
 def main():
     actions = (
-        ('Preprocess', 'filter the number of ALT, quality score, MAF, missing rate, variant type, reclibrate position, split msnp to snp.'),
+        ('Preprocess', 'preprocess raw SNPs by controlling the number of ALT, quality score, MAF, missing rate, variant type, reclibrate position, split msnp to snp.'),
         ('NUM_ALT', 'filter number of alternative SNPs'),
         ('Miss_Rate', 'filter missing rate'),
         ('HeterMiss_Rate', 'filter SNPs with high heterozygous and missing rates'),
@@ -29,7 +29,7 @@ def main():
 def Preprocess(args):
     """
     %prog Preprocess dir
-    1, Only keep variants: number of ALT==1, quality score >=10, AMF>=0.01, missing rate>0.3, type is snp. 
+    1, Only keep variants: number of ALT==1, quality score >=10, MAF>=0.01, missing rate>0.3, type is snp. 
     2, split msnp to snps.
     """
     p = OptionParser(Preprocess.__doc__)

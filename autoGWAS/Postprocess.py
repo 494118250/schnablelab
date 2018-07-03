@@ -22,6 +22,7 @@ def main():
     actions = (
         ('fetchMAF', 'calculate the MAFs of selected SNPs'),
         ('SigSNPs', 'fetch the first n significant SNPs'),
+        ('SharedSigSNPs', 'find shared significant SNPs between gemma and farmcpu'),
         ('fetchEVs', 'fetch effect sizes of selected SNPs'),
         ('fetchLinkedSNPs', 'fetch highly linked SNPs'),
         ('fetchGenoVCF', 'fetch genotypes for SNPs from vcf file'),
@@ -138,6 +139,23 @@ def fetchEVs(args):
     f.close()
     f1.close()
     print('see EVs.%s'%SNPlist)
+
+def SharedSigSNPs(args):
+    """
+    %prog SigSNPsFromGEMMA SigSNPsFromFarmcpu output
+    find shared SNPs between gemma and farmcpu
+    """
+    p = OptionParser(SharedSigSNPs.__doc__)
+    if len(args) == 0:
+        sys.exit(not p.print_help())
+
+    SigSNPsFromGEMMA, SigSNPsFromFarmcpu, output, = args 
+    df1 = pd.read_csv(SigSNPsFromFarmcpu, delim_whitespace=True)
+    df2 = pd.read_csv(SigSNPsFromGEMMA, delim_whitespace=True)
+    df = df2[df2['rs'].isin(df1['SNP'])]
+    df.to_csv(output, index=False, sep='\t')
+    print('Done! Check %s'%output)
+        
 
 def SigSNPs(args):
     """
