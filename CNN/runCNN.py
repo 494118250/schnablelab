@@ -1,7 +1,7 @@
 # -*- coding: UTF-8 -*-
 
 """
-train cnn based on vgg structure.
+generate slurm files for machine learning jobs.
 """
 import os.path as op
 import sys
@@ -10,10 +10,12 @@ from JamesLab.apps.header import Slurm_gpu_header
 from JamesLab.apps.natsort import natsorted
 
 vgg_py = op.abspath(op.dirname(__file__))+'/VGG.py'    
+LNN_py = op.abspath(op.dirname(__file__))+'/LinearClassifer.py'    
 
 def main():
     actions = (
         ('vgg', 'run vgg model'),
+        ('LinearModel', 'run simple linear neural network'),
             )
     p = ActionDispatcher(actions)
     p.dispatch(globals())
@@ -46,11 +48,44 @@ def vgg(args):
     print('slurm file %s.vgg.slurm has been created, you can sbatch your job file.'\
 %opts.prefix)
     
-def inception():
-    pass
+def LinearModel(args):
+    """
+    %prog np_predictors np_target
+    tune model with different parameters
+    """
+    p = OptionParser(vgg.__doc__)
+    p.add_option('--lr', default=40,
+        help = 'specify the number of learing rate in (1e-2, 1e-6)')
+    #p.add_option('--epc', default=30,
+    #    help = 'specify epoches')
+    p.set_slurm_opts(array=True)
+    opts, args = p.parse_args(args)
+    if len(args) == 0:
+        sys.exit(not p.print_help())
+    np_x,np_y = args
 
-def resnet():
-    pass
+# find the good structure capacity(from low/simple to high/complex) and learning rate .
+# You will observe a relatively deep curve but it continous to go down.
+# loss function(tell how bad your weight is): also try 'mean_squared_error'?
+# optimizer(the process to choose minimum bad value of your weight): also try 'adam'
+
+
+    hid_lyrs = [2,3,4]
+    units = [50, 100, 150, 200, 250, 300, 350, 400]
+    
+    for lyr in hid_lyrs:
+        for unit in units:
+            for count in range(int(opts.lr)):
+                lr = 10**uniform[1e-2, 1e-6]
+                cmd = 'python %s %s %s %s %s %s\n'%(LNN_py, np_x, np_y, lyr, unit, lr)
+                SlurmHeader = Slurm_gpu_header%(opts.prefix,opts.prefix,opts.prefix,opts.gpu)
+                SlurmHeader += 'module load anaconda\n'
+                SlurmHeader += 'source activate MCY\n'
+                SlurmHeader += vgg_cmd
+                f = open('LNN_%s_%s_%s.slurm'%(lyr,unit,lr), 'w')
+                f.write(SlurmHeader)
+                f.close()
+    print('slurms have been created, you can sbatch your job file.')
 
  
 if __name__ == "__main__":

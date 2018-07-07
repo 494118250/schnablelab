@@ -1,5 +1,5 @@
 """
-implement a simplify VGG for machine learning
+implement a simplified VGG to detect sorghum flowering time
 """
 from glob import glob
 import numpy as np
