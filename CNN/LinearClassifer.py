@@ -45,7 +45,7 @@ def get_model(num_hiden_layers, num_units, ActivFunc='relu'):
     model.summary()
     return(model)
 
-def train(x,y,lyr,unit,lr):
+def train(x, y, lyr, unit, lr):
     predictors,target = load_data(x,y)
     model = get_model(lyr, unit)
     my_optimizer = SGD(lr=lr)
@@ -54,3 +54,10 @@ def train(x,y,lyr,unit,lr):
     model_history = model.fit(predictors, target, validation_split=0.2, epochs=50, callbacks=[early_stopping_monitor])
     model.save('model_%s_%s_%s.h5'%(lyr,unit,lr)) # save model
     pickle.dump(model_history.history, open( "History_%s_%s_%s.p"%(lyr,unit,lr), "wb" ) ) # save training history
+
+
+import sys
+if len(sys.argv)==6:
+    train(*sys.argv[1:])
+else:
+    print('np_x, np_y, lyr, unit, lr')
