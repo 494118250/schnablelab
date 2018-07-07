@@ -16,6 +16,7 @@ from subprocess import call
 def main():
     actions = (
         ('RunMACS2', 'run macs2'),
+        ('FetchSeqs', 'extract sequences of peak reagions'),
 )
     p = ActionDispatcher(actions)
     p.dispatch(globals())
@@ -44,7 +45,21 @@ def RunMACS2(args):
     f.close()
     print('slurm files %s.macs2.slurm has been created, you can sbatch your job file.')
     
-
+def FetchSeqs(args):
+    """
+    %prog fasta bed out
+    fetch sequences using bedtools
+    """
+    p = OptionParser(FetchSeqs.__doc__)
+    p.set_slurm_opts(array=False)
+    opts, args = p.parse_args(args)
+    if len(args) == 0:
+        sys.exit(not p.print_help())
+    fasta, bed, out, = args 
+    cmd1 = 'ml bedtools'
+    print(cmd1)
+    cmd2 = 'nohup bedtools getfasta -fi %s -bed %s -name > %s &'%(fasta, bed, out)
+    print(cmd2)
 
 if __name__ == "__main__":
     main()
