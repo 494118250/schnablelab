@@ -14,7 +14,7 @@ Slurm_header = '''#!/bin/sh
 
 Slurm_gpu_header = '''#!/bin/sh
 #SBATCH --time=130:00:00          # Run time in hh:mm:ss
-#SBATCH --mem-per-cpu=10000       # Maximum memory required per CPU (in megabytes)
+#SBATCH --mem-per-cpu=%s      # Maximum memory required per CPU (in megabytes)
 #SBATCH --job-name=%s
 #SBATCH --error=./%s.err
 #SBATCH --output=./%s.out

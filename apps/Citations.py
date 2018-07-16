@@ -30,7 +30,7 @@ def DependentCitations(args):
     AuthorsFile, AllBibTexFile, = args
 
     f1 = open(AllBibTexFile)
-    titles, authors = [], []
+    titles, authors, papernames = [], [], []
     for i in f1:
         if '@' in i:
             tit = i.split('{')[-1].split(',')[0]
@@ -38,7 +38,10 @@ def DependentCitations(args):
         elif '  author={' in i:
             aut = i.split('author={')[-1].split('}')[0]
             authors.append(aut)
-    df = pd.DataFrame(dict(zip(['title', 'authors'], [titles, authors]))) 
+        elif '  title={' in i:
+            papna = i.split('title={')[-1].split('}')[0]
+            papernames.append(papna)
+    df = pd.DataFrame(dict(zip(['title', 'authors', 'paper_name'], [titles, authors, papernames]))) 
     print('total %s citations in bibtex file'%df.shape[0])
     
     dependentPapers = []
