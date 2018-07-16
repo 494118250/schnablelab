@@ -71,7 +71,7 @@ def Trim(args):
         sys.exit(not p.print_help())
     mydir, = args
     allfiles = [i for i in os.listdir(mydir) if i.endswith('.fq.gz')]
-    print 'Total %s fastq.gz files'%len(allfiles)
+    print('Total %s fastq.gz files'%len(allfiles))
     for i in allfiles:
         sm = i.split('.')[0]
         cmd1 = 'java -jar $TM_HOME/trimmomatic.jar SE %s %s CROP:185 SLIDINGWINDOW:4:15 MINLEN:30'%(i, sm+'.trimed.fq\n')
@@ -100,7 +100,7 @@ def Align(args):
         sys.exit(not p.print_help())
     mydir, = args
     allfiles = [i for i in os.listdir('.') if i.endswith('.trimed.fq.gz') and not op.isfile(i.split('.')[0]+'.sam')]
-    print 'Total %s fq.gz files'%len(allfiles)
+    print('Total %s fq.gz files'%len(allfiles))
     for i in allfiles:
         SM = i.split('.')[0]
         R = r"'@RG\tID:%s\tSM:%s'"%(SM, SM)
@@ -129,7 +129,7 @@ def Sam2Bam(args):
         sys.exit(not p.print_help())
     mydir, = args
     allfiles = [i for i in os.listdir(mydir) if i.endswith('sam')]
-    print 'Total %s sam files'%len(allfiles)
+    print('Total %s sam files'%len(allfiles))
     for i in allfiles:
         SM = i.split('.')[0]
         output = '%s.bam'%SM
@@ -155,7 +155,7 @@ def SortBam(args):
         sys.exit(not p.print_help())
     mydir, = args
     allfiles = [i for i in os.listdir(mydir) if i.endswith('bam')]
-    print 'Total %s bam files'%len(allfiles)
+    print('Total %s bam files'%len(allfiles))
     for i in allfiles:
         SM = i.split('.')[0]
         output = '%s.sorted'%SM
@@ -181,7 +181,7 @@ def IndexBam(args):
         sys.exit(not p.print_help())
     mydir, = args
     allfiles = [i for i in os.listdir(mydir) if i.endswith('sorted.bam')]
-    print 'Total %s sorted.bam files'%len(allfiles)
+    print('Total %s sorted.bam files'%len(allfiles))
     for i in allfiles:
         SM = i.split('.')[0]
         cmd = 'samtools index %s\n'%i
@@ -206,7 +206,7 @@ def SNPsCall(args):
         sys.exit(not p.print_help())
     ref, info, = args
     allfiles = [i for i in os.listdir('.') if i.endswith('sorted.bam')]
-    print 'Total %s sorted.bam files'%len(allfiles)
+    print('Total %s sorted.bam files'%len(allfiles))
     f1 = open('bamfiles.fb.list', 'w')
     for i in allfiles :
         f1.write(i + '\n')

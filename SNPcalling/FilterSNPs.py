@@ -41,7 +41,7 @@ def Preprocess(args):
     mydir, = args
 
     allfiles = [i for i in os.listdir('.') if i.endswith('.vcf')]
-    print 'Total %s .vcf files'%len(allfiles)
+    print('Total %s .vcf files'%len(allfiles))
     for i in allfiles:
         SM = i.split('.')[0]
         cmd = "bcftools view -i 'N_ALT==1 && QUAL>=10 && MAF>=0.01 && NS/N_SAMPLES > 0.3' -v 'snps' %s | bcftools -m -snps > %s.prprcss.vcf"%(i, SM)
