@@ -79,7 +79,7 @@ def judge(ref, alt, genosList):
         elif k=='AB' :
             newlist.append('1')
         else:
-            print 'genotype error !'
+            print('genotype error !')
     return newlist
 
 def hmp2BIMBAM(args):
