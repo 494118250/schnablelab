@@ -74,8 +74,7 @@ def cancel(args):
     opts, args = p.parse_args(args)
     if len(args) != 0:
         sys.exit(not p.print_help())
-    myjobs = Popen('squeue -u cmiao', shell = True, stdout=subprocess.PIPE).communicate()[0]
-
+    myjobs = Popen('squeue -u cmiao', shell = True, stdout=subprocess.PIPE).communicate()[0].decode('utf-8')
     running_jobs, pending_jobs, others = [], [], []
     for i in myjobs.split('\n'):
         j = i.strip().split()

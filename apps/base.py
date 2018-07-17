@@ -133,7 +133,7 @@ class OptionParser(OptionP):
                  help='prefix of job name and log file')
         if array:
             group.add_option('-g', dest='gpu',default='p100', choices=('p100', 'k20', 'k40'),
-                 help='specify the gpu type')
+                 help='specify the gpu type if you want to submit to a gpu node')
         self.add_option_group(group)
 
 

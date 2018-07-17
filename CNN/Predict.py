@@ -43,7 +43,7 @@ def Convert3dImageMatrix(args):
     
     discard_imgs = ['0_0_0.png', '1_0_0.png']
     fname_list = [fname for fname in os.listdir(mydir) if fname not in ['0_0_0.png', '1_0_0.png'] and fname.endswith('.png')]
-    #fname_list = natsorted(fname_list)
+    fname_list = natsorted(fname_list)
     print(fname_list)
     num_images = len(fname_list)
     print('%s wavelengths'%num_images)
@@ -89,22 +89,15 @@ def Predict(args):
     #print(predictions.shape)
     # convert 1d array to 3d to show colors
     img_dims = (560, 320, 3)
-    img_stack = np.empty(img_dims, dtype=np.dtype('uint8'))
     colordict = {
         0:np.array([255,255,191]),
         1:np.array([26,150,65]),
         2:np.array([253,174,97]),
         3:np.array([215,25,28])
         }
-    for i in predictions:
-        for j in i:
-            t = colordict[j]
-            img_stack[i,j,:] = t
-    #print(img_stack.shape)
-    img = Image.fromarray(img_stack, 'RGB')
+    np.save('test.npy', predictions) 
+    img = Image.fromarray(predictions, 'RGB')
     img.save('%s.png'%npy.split('.npy')[0])
-    
-    
 
 def Plot(args): 
     """
