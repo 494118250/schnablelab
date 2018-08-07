@@ -23,7 +23,6 @@ def main():
     actions = (
         ('Plot', 'plot training model history'),
         ('Predict', 'using trained model to make prediction'),
-        ('PredictBatch', 'generate all slurm jobs of prediction'),
         ('Imgs2Arrs', 'convert hyperspectral images under a dir to a numpy array object'),
         ('Imgs2ArrsBatch', 'generate slurm job convert HyperImages to NPY for all hyperspectral image dirs'),
             )
@@ -118,29 +117,6 @@ def Predict(args):
     arr = np.stack([df1.values, df2.values, df3.values], axis=2)
     sm.imsave('%s.png'%otp, arr)
 
-def PredictBatch(args):
-    """
-    %prog model_name npyPattern("CM*.npy")
-    generate prediction jobs for all npy files
-    """
-    p = OptionParser(PredictBatch.__doc__)
-    p.set_slurm_opts(array=False)
-    opts, args = p.parse_args(args)
-    if len(args) == 0:
-        sys.exit(not p.print_help())
-    mn, pattern, = args
-    all_npy = glob(pattern)
-    for i in all_npy:
-        out_prefix = i.split('.noy')[0]
-        jobname = out_prefix + '.pred'
-        cmd = 'python -m JamesLab.CNN.Predict Predict %s %s %s\n'%(mn, i, out_prefix)
-        header = Slurm_header%(opts.time, opts.memory, jobname, jobname, jobname)
-        header += "ml anaconda\nsource activate Py3KerasTensorCPU\n"
-        header += cmd
-        jobfile = open('%s.pred.slurm'%out_prefix, 'w')
-        jobfile.write(header)
-        jobfile.close()
-
 def Plot(args): 
     """
     %prog dir
@@ -150,7 +126,7 @@ def Plot(args):
 
     p = OptionParser(Plot.__doc__)
     p.add_option("--pattern", default="History_*.p",
-        help="specify the pattern of your pickle object file, remember to add quotes [default: %default]")
+                 help="specify the patter of your pickle object file, remember to add quotes [default: %default]")
     p.set_slurm_opts(array=False)
     opts, args = p.parse_args(args)
 
