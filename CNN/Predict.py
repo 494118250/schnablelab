@@ -38,18 +38,20 @@ def Imgs2Arrs(args):
         z dim corresponds to hyperspectral image wavelength.
     '''
     import cv2
+    
     p = OptionParser(Imgs2Arrs.__doc__)
     opts, args = p.parse_args(args)
     if len(args) == 0:
         sys.exit(not p.print_help())
     mydir, = args
-    
     imgs = [i for i in os.listdir(mydir) if i.endswith('png')]
     sorted_imgs = sorted(imgs, key=lambda x: int(x.split('_')[0]))
     all_arrs = []
     for i in sorted_imgs[2:]:
-        #print(i)
-        img = cv2.imread('%s/%s'%(mydir, i), cv2.IMREAD_GRAYSCALE)
+        print(i)
+        #img = cv2.imread('%s/%s'%(mydir, i), cv2.IMREAD_GRAYSCALE)
+        img = np.array(Image.open('%s/%s'%(mydir, i)).convert('L'))
+        print(img.shape)
         all_arrs.append(img)
     arrs = np.stack(all_arrs, axis=2)
     np.save('%s.npy'%mydir, arrs)
@@ -67,7 +69,6 @@ def Imgs2ArrsBatch(args):
     pattern, = args
     all_dirs = [i for i in glob(pattern) if os.path.isdir(i)]
     for i in all_dirs:
-        print('slurm job for %s has been generated.'%i)
         cmd = 'python -m JamesLab.CNN.Predict Imgs2Arrs %s\n'%i
         jobname = i+'.img2npy'
         header = Slurm_header%(opts.time, opts.memory, jobname, jobname, jobname)
@@ -76,6 +77,7 @@ def Imgs2ArrsBatch(args):
         jobfile = open('%s.img2arr.slurm'%i, 'w')
         jobfile.write(header)
         jobfile.close()
+        print('slurm job for %s has been generated.'%i)
 
 def Predict(args):
     """
@@ -131,7 +133,7 @@ def PredictBatch(args):
     mn, pattern, = args
     all_npy = glob(pattern)
     for i in all_npy:
-        out_prefix = i.split('.noy')[0]
+        out_prefix = i.split('/')[-1].split('.npy')[0]
         jobname = out_prefix + '.pred'
         cmd = 'python -m JamesLab.CNN.Predict Predict %s %s %s\n'%(mn, i, out_prefix)
         header = Slurm_header%(opts.time, opts.memory, jobname, jobname, jobname)
@@ -140,6 +142,7 @@ def PredictBatch(args):
         jobfile = open('%s.pred.slurm'%out_prefix, 'w')
         jobfile.write(header)
         jobfile.close()
+        print('%s.slurm prediction job file generated!'%jobname)
 
 def Plot(args): 
     """
