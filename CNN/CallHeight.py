@@ -117,7 +117,7 @@ def PolishBatch(args):
         jobname = out_prefix + '.polish'
         cmd = 'python -m JamesLab.CNN.CallHeight Polish %s %s\n'%(i, out_prefix)
         header = Slurm_header%(opts.time, opts.memory, jobname, jobname, jobname)
-        header += "ml anaconda\nsource activate Py3KerasTensorCPU\n"
+        header += "ml anaconda\nsource activate %s\n"%opts.env
         header += cmd
         jobfile = open('%s.polish.slurm'%out_prefix, 'w')
         jobfile.write(header)
@@ -158,15 +158,17 @@ def CallHeight(args):
     f1.write('%s'%c)
     f1.close()
     # plot
-    """
+    plt.switch_backend('agg')
     ylim, xlim = spgray.shape 
-    rcParams['figure.figsize'] = xlim*0.01, ylim*0.01
-    plt.scatter(X, Y, s=0.5)
-    plt.plot([getx(0), getx(ymax)], [0, ymax], c='r')
-    plt.xlim([0,xlim])
-    plt.ylim([0,ylim])
-    plt.savefig('%s.Height.pdf'%outPrefix)
-    """
+    rcParams['figure.figsize'] = xlim*0.015, ylim*0.015
+    fig, ax = plt.subplots()
+    ax.scatter(X, Y, s=0.1, color='k', alpha=0.7)
+    ax.plot([getx(0), getx(ymax)], [0, ymax], c='r', linewidth=1)
+    ax.text(100, 100, "%.2f"%c, fontsize=12)
+    ax.set_xlim([0,xlim])
+    ax.set_ylim([0,ylim])
+    plt.tight_layout()
+    plt.savefig('%s.Height.png'%outPrefix)
 
 def CallHeightBatch(args):
     """
@@ -185,7 +187,7 @@ def CallHeightBatch(args):
         jobname = out_prefix + '.Height'
         cmd = 'python -m JamesLab.CNN.CallHeight CallHeight %s %s\n'%(i, out_prefix)
         header = Slurm_header%(opts.time, opts.memory, jobname, jobname, jobname)
-        header += "ml anaconda\nsource activate Py3KerasTensorCPU\n"
+        header += "ml anaconda\nsource activate %s\n"%opts.env
         header += cmd
         jobfile = open('%s.CallHeight.slurm'%out_prefix, 'w')
         jobfile.write(header)
