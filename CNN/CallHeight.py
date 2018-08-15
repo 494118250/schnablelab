@@ -143,28 +143,27 @@ def CallHeight(args):
     pRGB_img = Image.fromarray(pRGB)
     pgray = np.array(pRGB_img.convert(mode='L'))
     spgray = np.where(sgray==255, pgray, sgray)
+    xlim, ylim = spgray.shape 
     # fit model
-    X = np.where(spgray< 255)[1]
-    Y = np.where(spgray< 255)[0]*-1+spgray.shape[0]
+    X, Y = np.where(spgray< 255)
+    X = X*-1+xlim
     model = LinearRegression()
     model.fit(X.reshape(-1,1), Y)
     # regression line
-    getx = lambda y: (y-model.intercept_)/model.coef_
-    ymax = Y.max()
-    a = np.absolute(getx(0)-getx(ymax))
-    b = ymax
+    
+    a = X.max()
+    b = np.abs(model.predict(0)-model.predict(a))
     c = hypot(a, b)
     f1 = open('%s.Height.csv'%outPrefix, 'w')
     f1.write('%s'%c)
     f1.close()
     # plot
     plt.switch_backend('agg')
-    ylim, xlim = spgray.shape 
     rcParams['figure.figsize'] = xlim*0.015, ylim*0.015
     fig, ax = plt.subplots()
     ax.scatter(X, Y, s=0.1, color='k', alpha=0.7)
-    ax.plot([getx(0), getx(ymax)], [0, ymax], c='r', linewidth=1)
-    ax.text(100, 100, "%.2f"%c, fontsize=12)
+    ax.plot([0, a], [model.predict(0), model.predict(a)], c='r', linewidth=1)
+    ax.text(100, 50, "%.2f"%c, fontsize=12)
     ax.set_xlim([0,xlim])
     ax.set_ylim([0,ylim])
     plt.tight_layout()
