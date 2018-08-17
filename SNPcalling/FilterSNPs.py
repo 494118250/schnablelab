@@ -9,6 +9,7 @@ https://samtools.github.io/bcftools/bcftools.html
 import pandas as pd
 import os.path as op
 import sys
+from subprocess import call
 from JamesLab.apps.base import ActionDispatcher, OptionParser, glob,iglob
 from JamesLab.apps.natsort import natsorted
 import subprocess
@@ -33,6 +34,7 @@ def Preprocess(args):
     %prog Preprocess dir
     1, Only keep variants: number of ALT==1, quality score >=10, MAF>=0.01, missing rate>0.3, type is snp. 
     2, split msnp to snps.
+    only applicable on the unimputed vcf files.
     """
     p = OptionParser(Preprocess.__doc__)
     p.set_slurm_opts(array=False)
@@ -120,11 +122,9 @@ def Missing(args):
         sys.exit(not p.print_help())
     vcffile, = args
     prefix = vcffile.split('.')[0]
-    new_f = prefix + '.missR.vcf'
+    new_f = prefix + '.mis.vcf'
 
-    subprocess.call('module load bcftools', shell=True)
-    child = subprocess.Popen('bcftools query -l %s|wc -l'%vcffile, shell=True, stdout=subprocess.PIPE)
-    out = int(child.communicate()[0])
+    out = getSMsNum(vcffile)
     print('Total %s Samples.'%out)
 
     if opts.NS in ('NS', 'NZ'):
@@ -142,14 +142,14 @@ def Missing(args):
     f.write(header)
     print('slurm file %s.missR.slurm has been created, you can sbatch your job file.'%prefix)
 
-def genotypes_count(snp, imputed):
-    if imputed == 'no':
-        a1, a2, h, m = snp.count('0/0'), snp.count('1/1'), snp.count('0/1'), snp.count('./.')
-    elif imputed == 'yes':
-        a1, a2, m = snp.count('0|0'), snp.count('1|1'), snp.count('.|.')
-        h = snp.count('0|1')+snp.count('1|0')
-    else:
-        print('only no or yes!!!')
+def genotypes_count(snp):
+    """
+    calculate the numbers of ref, alt, hetero, missing genotypes.
+    """
+    a1 = snp.count('0/0')+snp.count('0|0')
+    a2 = snp.count('1/1')+ snp.count('1|1')
+    h = snp.count('0/1')+ snp.count('0|1')+snp.count('1|0')
+    m = snp.count('./.')+snp.count('.|.')
     return a1, a2, h, m
 
 def Heterozygous(args):
@@ -159,52 +159,67 @@ def Heterozygous(args):
     """
     p = OptionParser(Heterozygous.__doc__)
     p.add_option('--h2_rate', default = 0.05,
-        help = 'specify the heterozygous rate cutoff')
-    p.add_option('--imputed', default = 'no', choices=('no', 'yes'), 
-        help = 'specify if the vcf is imputed')
+        help = 'specify the heterozygous rate cutoff, higher than this cutoff will be removed.')
     p.set_slurm_opts(array=False)
     opts, args = p.parse_args(args)
     if len(args) == 0:
         sys.exit(not p.print_help())
     vcffile, = args
-    prefix = vcffile.split('vcf')[0]
-    new_f = prefix + '.Hete.vcf'
+    prefix = vcffile.split('.vcf')[0]
+    new_f = prefix + '.het.vcf'
     f0 = open(vcffile)
     f1 = open(new_f, 'w')
     for i in f0:
         if i.startswith('#'):
             f1.write(i)
         else:
-            a1, a2, h, m = genotypes_count(i, opts.imputed)
+            a1, a2, h, m = genotypes_count(i)
             if h < min(a1, a2) and h/float(a1+a2+h) < float(opts.h2_rate):
                 f1.write(i)
     f0.close()
     f1.close()
 
+def getSMsNum(vcffile):
+    call('module load bcftools', shell=True)
+    child = subprocess.Popen('bcftools query -l %s|wc -l'%vcffile, shell=True, stdout=subprocess.PIPE)
+    SMs_num = float(child.communicate()[0])
+    return SMs_num
+
 def MAF(args):
     """
     %prog vcf
-    Remove SNPs with rare MAF
+    Remove SNPs with rare MAF using bcftools.
     """
     p = OptionParser(MAF.__doc__)
     p.add_option('--maf', default = '0.01',
         help = 'specify the missing rate cutoff, MAF less than this cutoff will be removed.')
+    p.add_option('--imputed', choices=('yes', 'no'), default = 'no',
+        help = "specify if the vcf was imputed.")
     opts, args = p.parse_args(args)
     if len(args) == 0:
         sys.exit(not p.print_help())
     vcffile, = args   
     maf = float(opts.maf)
     prefix = vcffile.split('.vcf')[0]
-    new_f = prefix + '.MAF.vcf'
-    cmd = "bcftools view -i 'AF>=%s || AF<=%s' %s > %s"%(maf, 1-maf, vcffile, new_f)    
-    jobfile = '%s.MAF.slurm'%prefix
-    f = open(jobfile, 'w')
-    header = Slurm_header%(opts.time, opts.memory, opts.prefix, opts.prefix, opts.prefix)
-    header += 'module load bcftools\n'
-    header += cmd
-    f.write(header)
-    print('slurm file %s.MAF.slurm has been created, you can sbatch your job file.'%prefix)
-
+    new_f = prefix + '.maf.vcf'
+    if opts.imputed == 'no':
+        call('module load bcftools', shell=True)
+        cmd = "bcftools view -i 'AF>=%s && AF<=%s' %s > %s"%(maf, 1-maf, vcffile, new_f)    
+        call(cmd, shell=True)
+        print('Done!, check %s'%new_f)
+    else:
+        f1 = open(new_f, 'w')
+        with open(vcffile) as f0:
+            for i in f0:
+                if i.startswith('#'): f1.write(i)
+                else:
+                    ref, alt, het, mis = genotypes_count(i)
+                    an1, an2 = ref*2+het, alt*2+het
+                    maf = min(an1,an2)/(an1+an2)
+                    if maf >= float(opts.maf):
+                        f1.write(i)
+        f1.close()
+    
 def GrepImputatedVcf(args):
     """
     %prog LowerMissingVcf ImputedVcf out_vcf
