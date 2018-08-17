@@ -32,11 +32,8 @@ def main():
     p = ActionDispatcher(actions)
     p.dispatch(globals())
 
-def CallPart(fn, part='stem'):
-    img = Image.open(fn)
-    crp_box = (25, 0, 300, 481) # crop: left, upper, right, and lower pixel coordinate
-    img_crp = np.array(img.crop(crp_box)) 
-    crp_shape2d = img_crp.shape[0:2]
+def CallPart(rgb_arr, part='stem'):
+    crp_shape2d = rgb_arr.shape[0:2]
     if part =='stem':
         r, g, b = 251, 129, 14
     elif part == 'panicle':
@@ -49,7 +46,7 @@ def CallPart(fn, part='stem'):
     p2 = np.full(crp_shape2d,g)
     p3 = np.full(crp_shape2d,b)
     p123 = np.stack([p1, p2, p3], axis=2)
-    pRGB = np.where(img_crp==p123, img_crp, 255)
+    pRGB = np.where(rgb_arr==p123, rgb_arr, 255)
     return pRGB
 
 def FilterPixels(arr3d, d=0):
@@ -82,19 +79,32 @@ def Polish(args):
     Using opencv blur function to filter noise pixles for each plant component
     """
     p = OptionParser(Polish.__doc__)
+    p.add_option("--crop",
+        help="if you want to crop image, please specify the crop size following coordinates of upper left conner and right bottom conner.")
+    p.add_option("--blur_degree", default='4',
+        help="specify the degree value in GaussinBlur function. [default: %default]")
     opts, args = p.parse_args(args)
     if len(args) == 0:
         sys.exit(not p.print_help())
     imgIn, imgOut = args
-    
-    stemRGBraw = CallPart(imgIn, 'stem')
+
+    img = Image.open(imgIn)
+    if opts.crop:
+        crp_tuple = tuple([int(i) for i in opts.crop.split()]) # crop: left, upper, right, and lower pixel coordinate
+        if len(crp_tuple) != 4:
+            sys.exit("please specify 'left upper right bottom'")
+        else:
+            img = np.array(img.crop(crp_tuple))
+    else:
+        img = np.array(img)
+    stemRGBraw = CallPart(img, 'stem')
     stem = FilterPixels(stemRGBraw)
     stemRGB = gray2rgb(stem, 'stem')
-    panicleRGBraw = CallPart(imgIn, 'panicle')
-    panicle = FilterPixels(panicleRGBraw, d=4)
+    panicleRGBraw = CallPart(img, 'panicle')
+    panicle = FilterPixels(panicleRGBraw, d=int(opts.blur_degree))
     panicleRGB = gray2rgb(panicle, 'panicle')
-    leafRGBraw = CallPart(imgIn, 'leaf')
-    leaf = FilterPixels(leafRGBraw, d=4)
+    leafRGBraw = CallPart(img, 'leaf')
+    leaf = FilterPixels(leafRGBraw, d=int(opts.blur_degree))
     leafRGB = gray2rgb(leaf, 'leaf')
     spRGB = np.where(stemRGB==255, panicleRGB, stemRGB)
     splRGB = np.where(spRGB==255, leafRGB, spRGB)
@@ -130,16 +140,28 @@ def CallHeight(args):
     call height from polished image
     """
     p = OptionParser(CallHeight.__doc__)
+    p.add_option("--crop",
+        help="if you want to crop image, please specify the crop size following coordinates of upper left conner and right bottom conner.")
     opts, args = p.parse_args(args)
     if len(args) == 0:
         sys.exit(not p.print_help())
     imageIn, outPrefix = args
-    
+
+    img = Image.open(imageIn)
+    if opts.crop:
+        crp_tuple = tuple([int(i) for i in opts.crop.split()]) # crop: left, upper, right, and lower pixel coordinate
+        if len(crp_tuple) != 4:
+            sys.exit("please specify 'left upper right bottom'")
+        else:
+            img = np.array(img.crop(crp_tuple))
+    else:
+        img = np.array(img)
+
     # get stem and panicle pixels
-    sRGB = CallPart(imageIn, 'stem')
+    sRGB = CallPart(img, 'stem')
     sRGB_img = Image.fromarray(sRGB)
     sgray = np.array(sRGB_img.convert(mode='L'))
-    pRGB = CallPart(imageIn, 'panicle')
+    pRGB = CallPart(img, 'panicle')
     pRGB_img = Image.fromarray(pRGB)
     pgray = np.array(pRGB_img.convert(mode='L'))
     spgray = np.where(sgray==255, pgray, sgray)
@@ -151,7 +173,8 @@ def CallHeight(args):
     model.fit(X.reshape(-1,1), Y)
     # regression line
     
-    a = X.max()
+    #a = X.max()
+    a = 131
     b = np.abs(model.predict(0)-model.predict(a))
     c = hypot(a, b)
     f1 = open('%s.Height.csv'%outPrefix, 'w')
