@@ -31,7 +31,7 @@ def farmcpu(args):
         sys.exit(not p.print_help())
 
     pheno, geno_prefix, PCA = args
-    mem = '.'.join(pheno.split('.')[0:-1])
+    mem = '.'.join(pheno.split('/')[-1].split('.')[0:-1])
     f1 = open('%s.FarmCPU.R'%mem, 'w')
     farmcpu_cmd = FarmCPU_header%(pheno,geno_prefix,geno_prefix,PCA,mem)
     f1.write(farmcpu_cmd)

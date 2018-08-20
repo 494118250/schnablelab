@@ -66,20 +66,21 @@ def hmp2vcf(args):
     f.close()
     print('slurm file %s.hmp2vcf.slurm has been created, you can sbatch your job file.'%prefix)
 
-def judge(ref, alt, genosList):
-    newlist = []
-    for k in genosList:
-        #if len(set(k))==1 and k[0] == ref:
-        if k=='AA':
-            newlist.append('0')
-        #elif len(set(k))==1 and k[0] == alt:
-        elif k=='BB':
-            newlist.append('2')
-        #elif len(set(k))==2 :
-        elif k=='AB' :
-            newlist.append('1')
-        else:
-            print('genotype error !')
+def judge(ref, alt, genosList, mode):
+    if mode == '2':
+        geno_dict = {'AA':'0', 'BB':'2', 'AB':'1'}
+        newlist = [geno_dict[i] for i in genosList]
+    else:
+        newlist = []
+        for k in genosList:
+            if len(set(k))==1 and k[0] == ref:
+                newlist.append('0')
+            elif len(set(k))==1 and k[0] == alt:
+                newlist.append('2')
+            elif len(set(k))==2 :
+                newlist.append('1')
+            else:
+                sys.exit('genotype error !')
     return newlist
 
 def hmp2BIMBAM(args):
@@ -89,6 +90,8 @@ def hmp2BIMBAM(args):
     Convert hmp genotypic data to bimnbam datasets (*.mean and *.annotation).
     """
     p = OptionParser(hmp2BIMBAM.__doc__)
+    p.add_option('--mode', default = '1', choices=('1', '2'),
+        help = 'specify the genotype mode 1: read genotypes, 2: only AA, AB, BB.')
     opts, args = p.parse_args(args)
     
     if len(args) == 0:
@@ -102,8 +105,12 @@ def hmp2BIMBAM(args):
     for i in f1:
         j = i.split()
         rs = j[0]
-        ref, alt = j[1].split('/')[0], j[1].split('/')[1]
-        newNUMs = judge(ref, alt, j[11:])
+        try:
+            ref, alt = j[1].split('/')
+        except:
+            print('omit rs...')
+            continue
+        newNUMs = judge(ref, alt, j[11:], opts.mode)
         newline = '%s,%s,%s,%s\n'%(rs, ref, alt, ','.join(newNUMs))
         f2.write(newline)
         pos = j[3]
@@ -121,6 +128,8 @@ def hmp2numCol(args):
     Memory efficient than numeric in rows
     """
     p = OptionParser(hmp2numCol.__doc__)
+    p.add_option('--mode', default = '1', choices=('1', '2'),
+        help = 'specify the genotype mode 1: read genotypes, 2: only AA, AB, BB.')
     opts, args = p.parse_args(args)
     
     if len(args) == 0:
@@ -137,8 +146,12 @@ def hmp2numCol(args):
     for i in f1:
         j = i.split()
         rs = j[0]
-        ref, alt = j[1].split('/')[0], j[1].split('/')[1]
-        newNUMs = judge(ref, alt, j[11:])
+        try:
+            ref, alt = j[1].split('/')
+        except:
+            print('omit rs...')
+            continue
+        newNUMs = judge(ref, alt, j[11:], opts.mode)
         newline = '\t'.join(newNUMs)+'\n'
         f2.write(newline)
         pos = j[3]
@@ -186,6 +199,8 @@ def hmp2numRow(args):
     Convert hmp genotypic data to numeric datasets in rows(*.GD and *.GM).
     """
     p = OptionParser(hmp2numRow.__doc__)
+    p.add_option('--mode', default = '1', choices=('1', '2'),
+        help = 'specify the genotype mode 1: read genotypes, 2: only AA, AB, BB.')
     opts, args = p.parse_args(args)
 
     if len(args) == 0:
@@ -204,9 +219,14 @@ def hmp2numRow(args):
     f3.write('SNP\tChromosome\tPosition\n')
     for i in f1:
         j = i.split()
-        taxa,ref,alt,chro,pos = j[0],j[1][0],j[1][2],j[2],j[3]
+        try:
+            ref, alt = j[1].split('/')
+        except:
+            print('omit rs...')
+            continue
+        taxa,chro,pos = j[0],j[2],j[3]
         f3.write('%s\t%s\t%s\n'%(taxa, chro, pos))
-        newNUMs = judge(ref, alt, j[11:])
+        newNUMs = judge(ref, alt, j[11:], opts.mode)
         newline = '%s\t%s'%(taxa, '\t'.join(newNUMs))
         preConverted.append(newline.split())
     rightOrder = map(list, zip(*preConverted))

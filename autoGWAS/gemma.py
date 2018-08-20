@@ -67,7 +67,7 @@ def MLM(args):
         sys.exit(not p.print_help())
     GenoPrefix, Pheno, Outdir = args
     meanG, annoG = GenoPrefix+'.mean', GenoPrefix+'.annotation'
-    outprefix = '.'.join(Pheno.split('.')[0:-1])
+    outprefix = '.'.join(Pheno.split('/')[-1].split('.')[0:-1])
     cmd = '%s -g %s -p %s -a %s -lmm 4 -outdir %s -o %s' \
         %(gemma, meanG, Pheno, annoG, Outdir, outprefix)
     if opts.kinship:
@@ -104,6 +104,8 @@ def Manhattan(args):
         help = 'choose the pvalue cutoff')
     p.add_option('--multipletest', default='bonferroni', choices=('bonferroni', 'IndependentBonferroni', 'fdr'),
         help = 'choose the type of multiple test')
+    p.add_option('--idpm',
+        help = 'if IndependentBonferroni specified, the number of independent markers must be provided here.')
     p.add_option('--ylim', type = 'int',
         help = 'specify the ylim of the figure')
     opts, args = p.parse_args(args)
@@ -138,7 +140,7 @@ def Manhattan(args):
     if opts.multipletest == 'bonferroni':
         cutoff = -np.log10(opts.pvalue/len(df))
     elif opts.multipletest == 'IndependentBonferroni':
-        cutoff = -np.log10(opts.pvalue/(len(df)*0.32))
+        cutoff = -np.log10(opts.pvalue/(int(opts.idpm)))
     ax.axhline(cutoff)
     ax.set_xticks(x_labels_pos)
     ax.set_xticklabels(x_labels, fontsize='14',  fontweight='bold')
