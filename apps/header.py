@@ -74,6 +74,21 @@ myCV <- read.table("%s", head = TRUE)
 myFarmCPU <- FarmCPU(Y=myY, GD=myGD, GM=myGM, CV=myCV, method.bin="optimum", bin.size=c(5e5,5e6,5e7), bin.selection=seq(10,100,10), threshold.output=1, memo='%s')
 '''
 
+MVP_Data_header = '''
+library(MVP)
+MVP.Data(fileHMP="%s", sep.hmp="\t", sep.phe="\t", SNP.effect="Add", fileKin=TRUE, filePC=TRUE, out="%s",priority="speed",)
+'''
+
+MVP_Run_header = '''
+library(MVP)
+phenotype <- read.table("%s",head=TRUE)
+genotype <- attach.big.matrix("%s.geno.desc")
+map <- read.table("%s.map" , head = TRUE)
+Kinship <- attach.big.matrix("%s.kin.desc")
+Covariates <- attach.big.matrix("%s.pc.desc")
+imMVP <- MVP(phe=phenotype,geno=genotype,map=map,K=Kinship,CV.MLM=Covariates,CV.FarmCPU=Covariates,maxLoop=10,method.bin="FaST-LMM",priority="speed",threshold=0.05,method=c("MLM", "FarmCPU"))
+'''
+
 MSTMap_header = '''
 population_type RIL%s
 population_name original

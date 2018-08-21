@@ -131,7 +131,7 @@ class OptionParser(OptionP):
                  help='memory(Mb) for slurm header')
         group.add_option('-p', dest='prefix',default='myjob',
                  help='prefix of job name and log file')
-        group.add_option('-e', dest='env',default='Py3KerasTensorCPU',
+        group.add_option('-e', dest='env',
                  help='the conda enviroment you need to activate')
         if array:
             group.add_option('-g', dest='gpu',default='p100', choices=('p100', 'k20', 'k40'),

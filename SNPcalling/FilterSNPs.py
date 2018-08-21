@@ -62,7 +62,7 @@ def Preprocess(args):
 def Subsampling(args):
     """
     %prog Subsampling SMs_file vcf_or_vcf.gz
-    Subsampling vcf file
+    Subsampling vcf file using bcftools. The samples order will also change following the order in SMs_file.
     """
     p = OptionParser(Subsampling.__doc__)
     p.set_slurm_opts(array=False)
@@ -72,9 +72,9 @@ def Subsampling(args):
         sys.exit(not p.print_help())
     SMsfile, vcffile, = args
     
-    prefix = vcffile.split('.')[0]
+    prefix = vcffile.split('/')[-1].split('.vcf')[0]
     new_f = prefix + '.subsm.vcf'
-    cmd = "bcftools view -S %s %s > %s"%(SMsfile, vcffile, new_f)
+    cmd = "bcftools view -S %s %s > %s\n"%(SMsfile, vcffile, new_f)
     jobfile = '%s.subsm.slurm'%prefix
     f = open(jobfile, 'w')
     header = Slurm_header%(opts.time, opts.memory, opts.prefix, opts.prefix, opts.prefix)
@@ -113,7 +113,7 @@ def Missing(args):
     """
     p = OptionParser(Missing.__doc__)
     p.add_option('--missing_rate', default = 0.4, 
-        help = 'specify the missing rate cutoff')
+        help = 'specify the missing rate cutoff. SNPs with missing rate higher than this cutoff will be removed.')
     p.add_option('--NS', default = 'NS', 
         help = 'specify the tag name to calculate the number of nonmissing samples. If NS, NZ are unavilable, can specify AN cause AN/2==NS')
     p.set_slurm_opts(array=False)
@@ -121,20 +121,21 @@ def Missing(args):
     if len(args) == 0:
         sys.exit(not p.print_help())
     vcffile, = args
-    prefix = vcffile.split('.')[0]
+    prefix = vcffile.split('.vcf')[0]
     new_f = prefix + '.mis.vcf'
+    nonMR = 1-float(opts.missing_rate)
 
     out = getSMsNum(vcffile)
     print('Total %s Samples.'%out)
 
     if opts.NS in ('NS', 'NZ'):
-        cmd = "bcftools view -i '%s/%s > %s' %s > %s\n"%(opts.NS, out, opts.missing_rate, vcffile, new_f)
+        cmd = "bcftools view -i '%s/%s >= %.2f' %s > %s\n"%(opts.NS, out, nonMR, vcffile, new_f)
     elif opts.NS == 'AN':
-        cmd = "bcftools view -i 'AN/%s > %s' %s > %s\n"%(out*2, opts.missing_rate, vcffile, new_f)
+        cmd = "bcftools view -i 'AN/%s >= %.2f' %s > %s\n"%(out*2, nonMR, vcffile, new_f)
     else:
         sys.exit('NS, NZ, AN only')
 
-    jobfile = '%s.missR.slurm'%prefix
+    jobfile = '%s.mis.slurm'%prefix
     f = open(jobfile, 'w')
     header = Slurm_header%(opts.time, opts.memory, opts.prefix, opts.prefix, opts.prefix)
     header += 'module load bcftools\n'
@@ -160,7 +161,6 @@ def Heterozygous(args):
     p = OptionParser(Heterozygous.__doc__)
     p.add_option('--h2_rate', default = 0.05,
         help = 'specify the heterozygous rate cutoff, higher than this cutoff will be removed.')
-    p.set_slurm_opts(array=False)
     opts, args = p.parse_args(args)
     if len(args) == 0:
         sys.exit(not p.print_help())
