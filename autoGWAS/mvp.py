@@ -55,22 +55,25 @@ def RunMVP(args):
     if len(args) == 0:
         sys.exit(not p.print_help())
     pheno, op, = args # op: output prefix
-    f1 = open('%s.mlm.farmcpu.R'%(op), 'w')
+    with open(pheno)  as f:
+        SM = f.readline().split()[-1]
+    f1 = open('%s.mlm.farmcpu.R'%(SM), 'w')
     f1.write(MVP_Run_header%(pheno, op, op, op, op))
     f1.close()
-    f2 = open('%s.mlm.farmcpuslurm'%op, 'w')
-    header = Slurm_header%(opts.time, opts.memory, op, op, op)
+    f2 = open('%s.mlm.farmcpu.slurm'%SM, 'w')
+    header = Slurm_header%(opts.time, opts.memory, SM, SM, SM)
     header += 'module load R\n'
-    header += 'R CMD BATCH %s.mlm.farmcpu.R\n'%op
+    header += 'R CMD BATCH %s.mlm.farmcpu.R\n'%SM
     f2.write(header)
     f2.close()
-    print('%s.mlm.farmcpu.R and %s.mlm.farmcpu.slurm have been created.'%(op,op))
+    print('%s.mlm.farmcpu.R and %s.mlm.farmcpu.slurm have been created.'%(SM,SM))
 
 def plot(args):
     """
     %prog plot gwas_out
 
     plt MVP results using MVP.Report function.
+    https://github.com/XiaoleiLiuBio/MVP
     """
     pass
 
