@@ -166,8 +166,8 @@ def SigSNPs(args):
     p.add_option('--MeRatio', default = '1',
         help = "specify the ratio of independent SNPs, maize is 0.32, sorghum is 0.53")
     p.add_option('--chromosome', default = 'all',
-        help = "specify chromosome, such 1, 2. 'all' means genome level")
-    p.add_option('--software', default = 'gemma', choices=('gemma', 'gapit', 'farmcpu', 'mvp'),
+        help = "specify chromosome, such 1, 2, 'all' means genome level")
+    p.add_option('--software', default = 'mvp', choices=('gemma', 'gapit', 'farmcpu', 'mvp'),
         help = 'specify which software generates the GWAS result')
     opts, args = p.parse_args(args)
 
@@ -182,6 +182,14 @@ def SigSNPs(args):
         df = df if opts.chromosome=='all' else df[df['chr']==opts.chromosome]
         df = df[['rs', 'chr', 'ps', 'p_lrt']]
         df[df['p_lrt'] < cutoff].to_csv(output, index=False, sep='\t')
+
+    elif opts.software == 'mvp':
+        df = pd.read_csv(gwas)
+        cutoff = 0.05/(float(opts.MeRatio) * df.shape[0])
+        print('significant cutoff: %s'%cutoff)
+        df['Chrom'] = df['Chrom'].astype('str')
+        df = df if opts.chromosome=='all' else df[df['Chrom']==opts.chromosome]
+        df[df.iloc[:,4] < cutoff].to_csv(output, index=False, sep='\t')
 
     elif opts.software == 'farmcpu':
         df = pd.read_csv(gwas, usecols=['SNP', 'Chromosome', 'Position', 'P.value'])
@@ -199,7 +207,7 @@ def SigSNPs(args):
         df = df if opts.chromosome=='all' else df[df['chr']==opts.chromosome]
         df[df['P.value'] < cutoff].to_csv(output, index=False, sep='\t')
     else:
-        pass # for mvp
+        sys.exit('specify which software you use: mvp, gemma, farmcpu, gapit.')
     print('Done! Check %s'%output)
         
 def fetchLinkedSNPs(args):
