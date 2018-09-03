@@ -26,24 +26,32 @@ def main():
         ('crop', 'crop sorghum images based their zoom levels'),
         ('pdf2png', 'convert pdf to png format'),
         ('downsize', 'down size the image'),
-        ('PlantPixels', 'detect he convex hull of a image'),
-        ('PlantPixelsBatch', 'run PlantPixels script on all images'),
+        ('PlantHull', 'detect he convex hull of a image'),
+        ('PlantHullBatch', 'run PlantPixels script on all images'),
     )
     p = ActionDispatcher(actions)
     p.dispatch(globals())
 
 
-def PlantPixels(args):
+def PlantHull(args):
     """
-    %prog PlantPixels img
+    %prog PlantHull img
     count how many pixels belong to plant part
     """
-    p = OptionParser(PlantPixels.__doc__)
+    p = OptionParser(PlantHull.__doc__)
+    p.add_option('--border',
+        help="ignore image part out of boder: up,down,left,right")
     opts, args = p.parse_args(args)
     if len(args) == 0:
         sys.exit(not p.print_help())
     inputImg, = args
     img = cv2.imread(inputImg, 0)
+    if opts.border:
+        up, bot, lef, rig = [int(i) for i in opts.border.split(',')]
+        img[0:up, :]=255
+        img[-bot:, :]=255
+        img[:, 0:lef]=255
+        img[:, -rig]=255
     _, thresh = cv2.threshold(img, 140, 255, cv2.THRESH_BINARY)
     thresh_ivt = invert(thresh)
     chull = convex_hull_image(thresh_ivt)
@@ -53,12 +61,12 @@ def PlantPixels(args):
     print('%s\t%s' % (inputImg, PixelCount))
 
 
-def PlantPixelsBatch(args):
+def PlantHullBatch(args):
     """
-    %prog PlantPixelsBatch Pattern("*.png") job_n
-    generate PlantPixels jobs for all image files
+    %prog PlantHullBatch Pattern("*.png") job_n
+    generate PlantHull jobs for all image files
     """
-    p = OptionParser(PlantPixelsBatch.__doc__)
+    p = OptionParser(PlantHullBatch.__doc__)
     p.set_slurm_opts()
     opts, args = p.parse_args(args)
     if len(args) == 0:
@@ -69,7 +77,7 @@ def PlantPixelsBatch(args):
     for img in all_imgs:
         imgpath = Path(img)
         outpre = str(imgpath.stem)
-        cmd = 'python -m JamesLab.ImgPros.Preprocess PlantPixels %s > %s.ppnum\n' % (img, outpre)
+        cmd = 'python -m JamesLab.ImgPros.Preprocess PlantHull %s --border 80,10,10,0 > %s.ppnum\n' % (img, outpre)
         all_cmds.append(cmd)
     grps = cutlist(all_cmds, int(jobn))
     for gn, grp in grps:
