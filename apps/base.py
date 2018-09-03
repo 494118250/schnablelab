@@ -6,8 +6,8 @@ import os
 import os.path as op
 import glob
 import sys
+import pandas as pd
 from optparse import OptionParser as OptionP, OptionGroup, SUPPRESS_HELP
-
 from JamesLab import __copyright__, __version__
 from JamesLab.apps.natsort import natsorted
 
@@ -123,17 +123,19 @@ class OptionParser(OptionP):
                         and o.action != "store_false":
                 o.help += " [default: %s]"%default_tag
     
-    def set_slurm_opts(self, array=False):
+    def set_slurm_opts(self, jn=None, gpu=None, env=None):
         group = OptionGroup(self, 'Slurm job parameters')
         group.add_option('-t', dest='time', default=1,
                  help='specify time(hour) for slurm header')
         group.add_option('-m', dest='memory', default=10000,
                  help='memory(Mb) for slurm header')
-        group.add_option('-p', dest='prefix',default='myjob',
+        if jn:
+            group.add_option('-p', dest='prefix',default='myjob',
                  help='prefix of job name and log file')
-        group.add_option('-e', dest='env',
+        if env:
+            group.add_option('-e', dest='env',
                  help='the conda enviroment you need to activate')
-        if array:
+        if gpu:
             group.add_option('-g', dest='gpu',default='p100', choices=('p100', 'k20', 'k40'),
                  help='specify the gpu type if you want to submit to a gpu node')
         self.add_option_group(group)
@@ -205,6 +207,19 @@ def iglob(pathname, patterns):
         for filename in matching:
             matches.append(op.join(root, filename))
     return natsorted(matches)
+
+def cutlist(lst, n):
+    """
+    cut list to different groupts with equal size
+    yield group name and group
+    """
+    series = pd.Series(lst)
+    ctg = pd.qcut(series.index, n)
+    grps = series.groupby(ctg)
+    for name, group in grps:
+        st = int(name.left+1)
+        ed = int(name.right)
+        yield '%s-%s'%(st, ed), group
 
 
 

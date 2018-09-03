@@ -72,7 +72,7 @@ def Imgs2ArrsBatch(args):
         cmd = 'python -m JamesLab.CNN.Predict Imgs2Arrs %s\n'%i
         jobname = i+'.img2npy'
         header = Slurm_header%(opts.time, opts.memory, jobname, jobname, jobname)
-        header += "ml anaconda\nsource activate Py3KerasTensorCPU\n"
+        #header += "ml anaconda\nsource activate MCY\n"
         header += cmd
         jobfile = open('%s.img2arr.slurm'%i, 'w')
         jobfile.write(header)

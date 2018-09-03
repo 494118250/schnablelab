@@ -12,16 +12,21 @@ from keras.layers import Conv2D, MaxPooling2D, Dropout, Flatten, Dense
 from keras.callbacks import EarlyStopping
 from keras.callbacks import History
 from keras.optimizers import Adam
+from keras.optimizers import SGD
 
 ts = (224,224)
 def preprocess(img_dir):
     imgs = []
     all_imgs = glob(img_dir + '/*/*png')
+    n = 0
     for i in all_imgs:
+        print(n)
+        n+=1
         img = load_img(i, target_size = ts)
         img_array = img_to_array(img)
         imgs.append(img_array)
     imgs = np.array(imgs)
+    print(imgs.shape)
     print('the demension of image array: %s'%(','.join([str(i) for i in imgs.shape]))) 
     return imgs
 
@@ -64,39 +69,40 @@ def train(train_dir, val_dir, lr, epc, model_name):
       ) 
 
     model = Sequential([
-    Conv2D(64, (3, 3), input_shape=(224, 224, 3), padding='same', activation='relu'),
-    Conv2D(64, (3, 3), activation='relu', padding='same'),
-    MaxPooling2D(pool_size=(2, 2), strides=(2, 2)),
-    #Dropout(0.2),
-    Conv2D(128, (3, 3), activation='relu', padding='same'),
-    Conv2D(128, (3, 3), activation='relu', padding='same',),
-    MaxPooling2D(pool_size=(2, 2), strides=(2, 2)),
-    #Dropout(0.2),
-    Conv2D(256, (3, 3), activation='relu', padding='same',),
-    Conv2D(256, (3, 3), activation='relu', padding='same',),
-    Conv2D(256, (3, 3), activation='relu', padding='same',),
-    MaxPooling2D(pool_size=(2, 2), strides=(2, 2)),
-    #Dropout(0.2),
-    #Conv2D(512, (3, 3), activation='relu', padding='same',),
-    #Conv2D(512, (3, 3), activation='relu', padding='same',),
-    #Conv2D(512, (3, 3), activation='relu', padding='same',),
-    #MaxPooling2D(pool_size=(2, 2), strides=(2, 2)),
-    #Dropout(0.25),
-    #Conv2D(512, (3, 3), activation='relu', padding='same',),
-    #Conv2D(512, (3, 3), activation='relu', padding='same',),
-    #Conv2D(512, (3, 3), activation='relu', padding='same',),
-    #MaxPooling2D(pool_size=(2, 2), strides=(2, 2)),
-    #Dropout(0.25),
-    Flatten(),
-    Dense(500, activation='relu'),
-    #Dropout(0.5),
-    Dense(2, activation='softmax')
-    ])
+      Conv2D(64, (3, 3), input_shape=(224, 224, 3), padding='same', activation='relu'),
+      Conv2D(64, (3, 3), activation='relu', padding='same'),
+      MaxPooling2D(pool_size=(2, 2), strides=(2, 2)),
+      #Dropout(0.2),
+      Conv2D(128, (3, 3), activation='relu', padding='same'),
+      Conv2D(128, (3, 3), activation='relu', padding='same',),
+      MaxPooling2D(pool_size=(2, 2), strides=(2, 2)),
+      #Dropout(0.2),
+      Conv2D(256, (3, 3), activation='relu', padding='same',),
+      Conv2D(256, (3, 3), activation='relu', padding='same',),
+      Conv2D(256, (3, 3), activation='relu', padding='same',),
+      MaxPooling2D(pool_size=(2, 2), strides=(2, 2)),
+      #Dropout(0.2),
+      Conv2D(512, (3, 3), activation='relu', padding='same',),
+      Conv2D(512, (3, 3), activation='relu', padding='same',),
+      Conv2D(512, (3, 3), activation='relu', padding='same',),
+      MaxPooling2D(pool_size=(2, 2), strides=(2, 2)),
+      #Dropout(0.25),
+      #Conv2D(512, (3, 3), activation='relu', padding='same',),
+      #Conv2D(512, (3, 3), activation='relu', padding='same',),
+      #Conv2D(512, (3, 3), activation='relu', padding='same',),
+      #MaxPooling2D(pool_size=(2, 2), strides=(2, 2)),
+      #Dropout(0.25),
+      Flatten(),
+      Dense(500, activation='relu'),
+      Dropout(0.5),
+      Dense(5, activation='softmax')
+      ])
 
     model.summary()
     model.compile(
       loss='categorical_crossentropy',
-      optimizer=Adam(lr=float(lr)), 
+      #optimizer=Adam(lr=float(lr)), 
+      optimizer=SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True), 
       metrics=['accuracy']
       )
 

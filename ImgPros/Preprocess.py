@@ -5,22 +5,73 @@ Crop RGB images from LemnaTec based on zoom levels using magick.
 """
 
 import os.path as op
+from pathlib import Path
 import sys
-from JamesLab.apps.base import ActionDispatcher, OptionParser, glob,iglob
+from JamesLab.apps.base import ActionDispatcher, OptionParser, glob, cutlist
 from JamesLab.apps.natsort import natsorted
 from subprocess import call
 from subprocess import Popen
 import re
 from JamesLab.apps.header import Slurm_header
+import cv2
+import numpy as np
+import pandas as pd
 
 def main():
     actions = (
         ('crop', 'crop sorghum images based their zoom levels'),
         ('pdf2png', 'convert pdf to png format'),
         ('downsize', 'down size the image'),
+        ('PlantPixels', 'detect he convex hull of a image'),
+        ('PlantPixelsBatch', 'run PlantPixels script on all images'),
             )
     p = ActionDispatcher(actions)
     p.dispatch(globals())
+
+def PlantPixels(args):
+    """
+    %prog PlantPixels img
+    count how many pixels belong to plant part
+    """
+    p = OptionParser(PlantPixels.__doc__)
+    opts, args = p.parse_args(args)
+    if len(args) == 0:
+        sys.exit(not p.print_help())
+    inputImg,= args
+    img = cv2.imread(inputImg, 0)
+    _, thresh = cv2.threshold(img, 140, 1, cv2.THRESH_BINARY)
+    PixelCount = np.sum(thresh == 0)
+    print('%s\t%s'%(inputImg, PixelCount))
+    
+def PlantPixelsBatch(args):
+    """
+    %prog PlantPixelsBatch Pattern("*.png") job_n
+    generate PlantPixels jobs for all image files
+    """
+    p = OptionParser(PlantPixelsBatch.__doc__)
+    p.set_slurm_opts()
+    opts, args = p.parse_args(args)
+    if len(args) == 0:
+        sys.exit(not p.print_help())
+    pattern,jobn, = args
+    all_imgs = glob(pattern)
+    all_cmds = []
+    for img in all_imgs:
+        imgpath = Path(img)
+        outpre = str(imgpath.stem)
+        cmd = 'python -m JamesLab.ImgPros.Preprocess PlantPixels %s > %s.ppnum\n'%(img, outpre)
+        all_cmds.append(cmd)
+    grps = cutlist(all_cmds, int(jobn)) 
+    for gn, grp in grps:
+        header = Slurm_header%(opts.time, opts.memory, outpre,outpre,outpre)
+        header += "ml anaconda\nsource activate MCY\n"
+        for cmd in grp:        
+            header += cmd
+        jobname = '%s.ppnum.slurm'%(gn)
+        jobfile = open(jobname, 'w')
+        jobfile.write(header)
+        jobfile.close()
+        print('%s job file generated!'%jobname)
 
 def crop(args):
     """

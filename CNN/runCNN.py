@@ -39,7 +39,7 @@ def vgg(args):
     train_dir, val_dir, model_name = args
     
     vgg_cmd = 'python %s %s %s %s %s %s'%(vgg_py, train_dir, val_dir, opts.lr, opts.epc, model_name) 
-    SlurmHeader = Slurm_gpu_header%(opts.prefix,opts.prefix,opts.prefix,opts.gpu)
+    SlurmHeader = Slurm_gpu_header%(opts.memory, opts.prefix,opts.prefix,opts.prefix,opts.gpu)
     SlurmHeader += 'module load anaconda\n'
     SlurmHeader += 'source activate MCY\n'
     SlurmHeader += vgg_cmd
