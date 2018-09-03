@@ -33,10 +33,12 @@ def submit(args):
     p = OptionParser(submit.__doc__)
     p.add_option("--pattern", default="*.slurm", 
                  help="specify the patter of your slurm job, remember to add quotes [default: %default]")
+    p.add_option("--cmdPfile", default='1', 
+                 help="specify how many cmds in each slurm file [default: %default]")
     p.add_option("--partition", default='jclarke', choices=('batch', 'jclarke'),
                 help = "choose which partition you are going to submit [default: %default]")
     p.add_option("--range", default='all', 
-                 help="exp: '1-10', '11-20', 'all'. 1-based coordinate")
+                 help="how many jobs you gonna submit this time. exp: '1-10', '11-20', 'all'. 1-based coordinate")
     opts, args = p.parse_args(args)
     if len(args) != 1:
         sys.exit(not p.print_help())
