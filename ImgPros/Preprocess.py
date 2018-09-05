@@ -19,6 +19,7 @@ import pandas as pd
 from skimage.morphology import convex_hull_image
 from skimage.util import invert
 from scipy import misc
+from PIL import Image
 
 
 def main():
@@ -40,7 +41,9 @@ def PlantHull(args):
     """
     p = OptionParser(PlantHull.__doc__)
     p.add_option('--border',
-        help="ignore image part out of boder: up,down,left,right")
+                 help="ignore image part out of boder: up,down,left,right")
+    p.add_option('--crop',
+                 help="crop image based on hull size")
     opts, args = p.parse_args(args)
     if len(args) == 0:
         sys.exit(not p.print_help())
@@ -48,13 +51,19 @@ def PlantHull(args):
     img = cv2.imread(inputImg, 0)
     if opts.border:
         up, bot, lef, rig = [int(i) for i in opts.border.split(',')]
-        img[0:up, :]=255
-        img[-bot:, :]=255
-        img[:, 0:lef]=255
-        img[:, -rig]=255
+        img[0:up, :] = 255
+        img[-bot:, :] = 255
+        img[:, 0:lef] = 255
+        img[:, -rig] = 255
     _, thresh = cv2.threshold(img, 140, 255, cv2.THRESH_BINARY)
     thresh_ivt = invert(thresh)
     chull = convex_hull_image(thresh_ivt)
+    pos = np.where(chull)
+    if opts.crop:
+        top, down, left, right = pos[0].min(), pos[0].max(), pos[1].min(), pos[1].max()
+        imgrgb = Image.open(inputImg)
+        imgrgb_crop = imgrgb.crop((left, top, right, down))
+        imgrgb_crop.save(inputImg.replace('.png', '.crp.png'))
     chull_diff = np.where(thresh_ivt == 255, 2, chull)
     misc.imsave('%s.hull.png' % (Path(inputImg).stem), chull_diff)
     PixelCount = np.sum(chull)
@@ -102,7 +111,7 @@ def crop(args):
     p.add_option('--date', default='08-09',
                  help='specify the first day of zoom level 2. Follow the mm-dd format')
 
-    p.set_slurm_opts(array=False)
+    p.set_slurm_opts(jn=True)
     opts, args = p.parse_args(args)
     if len(args) == 0:
         sys.exit(not p.print_help())
@@ -144,7 +153,6 @@ def pdf2png(args):
                  help='specify the dpi')
     p.add_option('--compression', default='90', choices=('50', '90', '100'),
                  help='specify the perfentage of compression, 100 means no compression.')
-    # p.set_slurm_opts(array=False)
     opts, args = p.parse_args(args)
     if len(args) == 0:
         sys.exit(not p.print_help())
