@@ -23,31 +23,36 @@ def main():
 
 def vgg(args):
     """
-    %prog train_dir val_dir model_name
+    %prog train_dir val_dir num_category model_name_prefix
     
     Run vgg model
     """
     p = OptionParser(vgg.__doc__)
-    p.add_option('--lr', default=1e-5,
-        help = 'specify the learing rate')
-    p.add_option('--epc', default=30,
+    p.add_option('--lr', default=40,
+        help = 'specify number of learing rate to test')
+    p.add_option('--epc', default=50,
         help = 'specify epoches')
-    p.set_slurm_opts(array=True)
+    p.set_slurm_opts(jn=True, gpu=True)
     opts, args = p.parse_args(args)
     if len(args) == 0:
         sys.exit(not p.print_help())
-    train_dir, val_dir, model_name = args
-    
-    vgg_cmd = 'python %s %s %s %s %s %s'%(vgg_py, train_dir, val_dir, opts.lr, opts.epc, model_name) 
-    SlurmHeader = Slurm_gpu_header%(opts.memory, opts.prefix,opts.prefix,opts.prefix,opts.gpu)
-    SlurmHeader += 'module load anaconda\n'
-    SlurmHeader += 'source activate MCY\n'
-    SlurmHeader += vgg_cmd
-    f = open('%s.vgg.slurm'%opts.prefix, 'w')
-    f.write(SlurmHeader)
-    f.close()
-    print('slurm file %s.vgg.slurm has been created, you can sbatch your job file.'\
-%opts.prefix)
+    train_dir, val_dir, numC, mnp = args #mnp:model name prefix
+    n = 1 
+    for count in range(int(opts.lr)):
+        jobprefix = '%s_%s'%(opts.prefix, n)
+        n += 1
+        lr = 10**uniform(-2, -6)
+        model_name = '%s_%s'%(mnp, lr)
+        vgg_cmd = 'python %s %s %s %s %s %s %s'%(vgg_py, train_dir, val_dir, numC, lr, opts.epc, model_name) 
+        SlurmHeader = Slurm_gpu_header%(opts.time, opts.memory, jobprefix,jobprefix,jobprefix,opts.gpu)
+        SlurmHeader += 'module load anaconda\n'
+        SlurmHeader += 'source activate MCY\n'
+        SlurmHeader += vgg_cmd
+        f = open('%s.vgg.slurm'%model_name, 'w')
+        f.write(SlurmHeader)
+        f.close()
+        print('slurm file %s.vgg.slurm has been created, you can sbatch your job file.'\
+%model_name)
     
 def LinearModel(args):
     """

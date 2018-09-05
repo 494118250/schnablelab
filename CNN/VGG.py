@@ -18,19 +18,16 @@ ts = (224,224)
 def preprocess(img_dir):
     imgs = []
     all_imgs = glob(img_dir + '/*/*png')
-    n = 0
     for i in all_imgs:
-        print(n)
-        n+=1
         img = load_img(i, target_size = ts)
         img_array = img_to_array(img)
         imgs.append(img_array)
     imgs = np.array(imgs)
-    print(imgs.shape)
-    print('the demension of image array: %s'%(','.join([str(i) for i in imgs.shape]))) 
+    #print(imgs.shape)
+    #print('the demension of image array: %s'%(','.join([str(i) for i in imgs.shape]))) 
     return imgs
 
-def train(train_dir, val_dir, lr, epc, model_name):
+def train(train_dir, val_dir, Categories, lr, epc, model_name):
     train_imgs =  preprocess(train_dir)
     val_imgs =  preprocess(val_dir)
 
@@ -67,24 +64,24 @@ def train(train_dir, val_dir, lr, epc, model_name):
       #save_to_dir = '%s_augmented_val_imgs'%model_name,
       #save_prefix = 'aug_val'
       ) 
-
+    print('data well prepared')
     model = Sequential([
       Conv2D(64, (3, 3), input_shape=(224, 224, 3), padding='same', activation='relu'),
       Conv2D(64, (3, 3), activation='relu', padding='same'),
       MaxPooling2D(pool_size=(2, 2), strides=(2, 2)),
       #Dropout(0.2),
       Conv2D(128, (3, 3), activation='relu', padding='same'),
-      Conv2D(128, (3, 3), activation='relu', padding='same',),
+      Conv2D(128, (3, 3), activation='relu', padding='same'),
       MaxPooling2D(pool_size=(2, 2), strides=(2, 2)),
       #Dropout(0.2),
-      Conv2D(256, (3, 3), activation='relu', padding='same',),
-      Conv2D(256, (3, 3), activation='relu', padding='same',),
-      Conv2D(256, (3, 3), activation='relu', padding='same',),
+      Conv2D(256, (3, 3), activation='relu', padding='same'),
+      Conv2D(256, (3, 3), activation='relu', padding='same'),
+      Conv2D(256, (3, 3), activation='relu', padding='same'),
       MaxPooling2D(pool_size=(2, 2), strides=(2, 2)),
       #Dropout(0.2),
-      Conv2D(512, (3, 3), activation='relu', padding='same',),
-      Conv2D(512, (3, 3), activation='relu', padding='same',),
-      Conv2D(512, (3, 3), activation='relu', padding='same',),
+      Conv2D(512, (3, 3), activation='relu', padding='same'),
+      Conv2D(512, (3, 3), activation='relu', padding='same'),
+      Conv2D(512, (3, 3), activation='relu', padding='same'),
       MaxPooling2D(pool_size=(2, 2), strides=(2, 2)),
       #Dropout(0.25),
       #Conv2D(512, (3, 3), activation='relu', padding='same',),
@@ -94,18 +91,19 @@ def train(train_dir, val_dir, lr, epc, model_name):
       #Dropout(0.25),
       Flatten(),
       Dense(500, activation='relu'),
-      Dropout(0.5),
-      Dense(5, activation='softmax')
+      #Dropout(0.5),
+      Dense(int(Categories), activation='softmax')
       ])
-
+    print('structure designed')
     model.summary()
+    print('start compiling')
     model.compile(
       loss='categorical_crossentropy',
-      #optimizer=Adam(lr=float(lr)), 
-      optimizer=SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True), 
+      optimizer=Adam(lr=float(lr)), 
+      #optimizer=SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True), 
       metrics=['accuracy']
       )
-
+    print('compile done')
     model_history = model.fit_generator(
       train_generator, 
       epochs=int(epc), 
@@ -116,12 +114,10 @@ def train(train_dir, val_dir, lr, epc, model_name):
     print('model has been saved to %s.h5'%model_name)
 
     pickle.dump(model_history.history, open( "%s_history.p"%model_name, "wb" ) )
-    print("model history as a dictionary has been saved pickle \
-object %s_history.p. You can load the dict back using \
-pickle.load(open('save.p', 'rb'))"%model_name)
+    print("model history has been saved to a pickle object %s_history.p."%model_name)
 
 import sys
-if len(sys.argv)==6:
+if len(sys.argv)==7:
     train(*sys.argv[1:])
 else:
-    print('train_dir', 'val_dir', 'lr', 'epoches', 'model_name')
+    print('train_dir', 'val_dir', 'categories_num', 'lr', 'epoches', 'model_name')
