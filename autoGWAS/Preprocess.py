@@ -312,20 +312,20 @@ def FixPlinkPed(args):
 
     fix the chr names issue in map and convert -9 to 0 in ped
     """
-    p = OptionParser(FixPlinkMap.__doc__)
+    p = OptionParser(FixPlinkPed.__doc__)
     opts, args = p.parse_args(args)
     if len(args) == 0:
         sys.exit(not p.print_help())
     old_prefix, new_prefix, = args
     f1 = open(new_prefix+'.map', 'w')
-    with open open(old_prefix+'.map') as f:
+    with open(old_prefix+'.map') as f:
         for i in f:
             j = i.split()
             Chr = j[1].split('_')[1]
             new_l = '%s\t%s\t0\t%s\n' % (Chr, j[1], j[3])
             f1.write(new_l)
     f2 = open(new_prefix+'.ped', 'w')
-    with open open(old_prefix+'.ped') as f:
+    with open(old_prefix+'.ped') as f:
         for i in f:
             j = i.replace('-9\t', '0\t')
             f2.write(j)

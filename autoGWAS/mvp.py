@@ -52,23 +52,23 @@ def RunMVP(args):
     run MVP given the phenotype and prefix of GenotypeMapKinshipCovariates files.
     """
     p = OptionParser(RunMVP.__doc__)
-    p.set_slurm_opts()
+    p.set_slurm_opts(jn=True)
     opts, args = p.parse_args(args)
     if len(args) == 0:
         sys.exit(not p.print_help())
     pheno, op, = args  # op: output prefix
     with open(pheno) as f:
         SM = f.readline().split()[-1]
-    f1 = open('%s.mlm.farmcpu.R' % (SM), 'w')
+    f1 = open('%s.mlm.farmcpu.R' %opts.prefix, 'w')
     f1.write(MVP_Run_header % (pheno, op, op, op, op))
     f1.close()
-    f2 = open('%s.mlm.farmcpu.slurm' % SM, 'w')
-    header = Slurm_header % (opts.time, opts.memory, SM, SM, SM)
+    f2 = open('%s.mlm.farmcpu.slurm' %opts.prefix, 'w')
+    header = Slurm_header % (opts.time, opts.memory, opts.prefix,opts.prefix,opts.prefix)
     header += 'module load R\n'
     header += 'R CMD BATCH %s.mlm.farmcpu.R\n' % SM
     f2.write(header)
     f2.close()
-    print('%s.mlm.farmcpu.R and %s.mlm.farmcpu.slurm have been created.' % (SM, SM))
+    print('%s.mlm.farmcpu.R and %s.mlm.farmcpu.slurm have been created.' % (opts.prefix,opts.prefix))
 
 
 def plot(args):
