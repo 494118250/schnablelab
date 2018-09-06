@@ -27,8 +27,7 @@ def main():
         ('hmp2numCol', 'transform hapmap format to numeric format in columns(gapit and farmcpu), less memory'),
         ('hmp2MVP', 'transform hapmap format to MVP genotypic format'),
         ('hmp2ped', 'transform hapmap format to plink ped format'),
-        ('PedNine2Zero', 'replace -9 in the ped file generated from tassel to 0!!!'),
-        ('FixPlinkMap', 'fix the chr names issue and Convert -9 to 0 in the plink map file'),
+        ('FixPlinkPed', 'fix the chr names issue and Convert -9 to 0 in the plink map file'),
         ('ped2bed', 'convert plink ped format to binary bed format'),
         ('genKinship', 'using gemma to generate centered kinship matrix'),
         ('genPCA10', 'using tassel to generate the first 10 PCs'),
@@ -307,49 +306,29 @@ def hmp2ped(args):
     f.close()
     print('Job file has been created. You can submit: sbatch -p jclarke %s.hmp2ped.slurm' % prefix)
 
-
-def PedNine2Zero(args):
+def FixPlinkPed(args):
     """
-    %prog old_ped new_ped
+    %prog map_ped_prefix new_prefix
 
-    Convert -9 to 0 in the ped genotype file
-    """
-    p = OptionParser(PedNine2Zero.__doc__)
-    opts, args = p.parse_args(args)
-    if len(args) == 0:
-        sys.exit(not p.print_help())
-    old_ped, new_ped, = args
-    f = open(old_ped)
-    f1 = open(new_ped, 'w')
-    for i in f:
-        j = i.replace('-9\t', '0\t')
-        f1.write(j)
-    f.close()
-    f1.close()
-    print('Done!')
-
-
-def FixPlinkMap(args):
-    """
-    %prog old_map new_map
-
-    fix the chr names issue and Convert -9 to 0 in the plink map file
+    fix the chr names issue in map and convert -9 to 0 in ped
     """
     p = OptionParser(FixPlinkMap.__doc__)
     opts, args = p.parse_args(args)
     if len(args) == 0:
         sys.exit(not p.print_help())
-    old_map, new_map, = args
-    f = open(old_map)
-    f1 = open(new_map, 'w')
-    for i in f:
-        j = i.split()
-        Chr = j[1].split('_')[1]
-        new_l = '%s\t%s\t0\t%s\n' % (Chr, j[1], j[3])
-
-        f1.write(new_l)
-    f.close()
-    f1.close()
+    old_prefix, new_prefix, = args
+    f1 = open(new_prefix+'.map', 'w')
+    with open open(old_prefix+'.map') as f:
+        for i in f:
+            j = i.split()
+            Chr = j[1].split('_')[1]
+            new_l = '%s\t%s\t0\t%s\n' % (Chr, j[1], j[3])
+            f1.write(new_l)
+    f2 = open(new_prefix+'.ped', 'w')
+    with open open(old_prefix+'.ped') as f:
+        for i in f:
+            j = i.replace('-9\t', '0\t')
+            f2.write(j)
     print('Done!')
 
 

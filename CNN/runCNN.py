@@ -41,7 +41,7 @@ def vgg(args):
     for count in range(int(opts.lr)):
         jobprefix = '%s_%s'%(opts.prefix, n)
         n += 1
-        lr = 10**uniform(-2, -6)
+        lr = 10**uniform(-2, -7)
         model_name = '%s_%s'%(mnp, lr)
         vgg_cmd = 'python %s %s %s %s %s %s %s'%(vgg_py, train_dir, val_dir, numC, lr, opts.epc, model_name) 
         SlurmHeader = Slurm_gpu_header%(opts.time, opts.memory, jobprefix,jobprefix,jobprefix,opts.gpu)

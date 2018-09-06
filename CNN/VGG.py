@@ -34,7 +34,7 @@ def train(train_dir, val_dir, Categories, lr, epc, model_name):
     train_datagen =  ImageDataGenerator(
       rescale = 1./255,
       featurewise_center=True,
-      rotation_range=20,
+      rotation_range=40,
       width_shift_range=0.2,
       height_shift_range=0.2
       )
@@ -42,7 +42,7 @@ def train(train_dir, val_dir, Categories, lr, epc, model_name):
     train_generator = train_datagen.flow_from_directory(
       train_dir,
       target_size=ts,
-      batch_size=30, 
+      batch_size=40, 
       shuffle=True
       #save_to_dir = '%s_augmented_train_imgs'%model_name,
       #save_prefix = 'aug_train'
@@ -59,7 +59,7 @@ def train(train_dir, val_dir, Categories, lr, epc, model_name):
     val_generator = val_datagen.flow_from_directory(
       val_dir,
       target_size=ts,
-      batch_size=30, 
+      batch_size=20, 
       shuffle=True
       #save_to_dir = '%s_augmented_val_imgs'%model_name,
       #save_prefix = 'aug_val'

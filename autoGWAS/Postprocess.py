@@ -217,7 +217,7 @@ def fetchLinkedSNPs(args):
     extract linked SNPs using plink
     """
     p = OptionParser(fetchLinkedSNPs.__doc__)
-    p.set_slurm_opts(array=False)
+    p.set_slurm_opts(jn=True)
     p.add_option('--header', default = 'yes', choices=('yes', 'no'),
         help = 'specify if there is a header in your SNP list file')
     opts, args = p.parse_args(args)

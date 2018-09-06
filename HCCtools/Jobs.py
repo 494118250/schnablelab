@@ -71,6 +71,8 @@ def cancel(args):
     p = OptionParser(cancel.__doc__)
     p.add_option("--status", default='running', choices=('running', 'pending'),
                  help="specify the status of the jobs you want to cancel [default: %default]")
+    p.add_option("--partition", default='jclarke', choices=('gpu', 'batch', 'jclarke'),
+                 help="specify the partition where jobs are runnig [default: %default]")
     opts, args = p.parse_args(args)
     if len(args) != 0:
         sys.exit(not p.print_help())

@@ -55,7 +55,7 @@ def PlantHull(args):
         img[-bot:, :] = 255
         img[:, 0:lef] = 255
         img[:, -rig] = 255
-    _, thresh = cv2.threshold(img, 140, 255, cv2.THRESH_BINARY)
+    _, thresh = cv2.threshold(img, 150, 255, cv2.THRESH_BINARY)
     thresh_ivt = invert(thresh)
     chull = convex_hull_image(thresh_ivt)
     pos = np.where(chull)
@@ -86,7 +86,8 @@ def PlantHullBatch(args):
     for img in all_imgs:
         imgpath = Path(img)
         outpre = str(imgpath.stem)
-        cmd = 'python -m JamesLab.ImgPros.Preprocess PlantHull %s --border 80,10,10,0 > %s.ppnum\n' % (img, outpre)
+        #cmd = 'python -m JamesLab.ImgPros.Preprocess PlantHull %s --border 80,10,10,0 > %s.ppnum\n' % (img, outpre)
+        cmd = 'python -m JamesLab.ImgPros.Preprocess PlantHull %s --crop True> %s.ppnum\n' % (img, outpre)
         all_cmds.append(cmd)
     grps = cutlist(all_cmds, int(jobn))
     for gn, grp in grps:
