@@ -65,7 +65,7 @@ def RunMVP(args):
     f2 = open('%s.mlm.farmcpu.slurm' %opts.prefix, 'w')
     header = Slurm_header % (opts.time, opts.memory, opts.prefix,opts.prefix,opts.prefix)
     header += 'module load R\n'
-    header += 'R CMD BATCH %s.mlm.farmcpu.R\n' % SM
+    header += 'R CMD BATCH %s.mlm.farmcpu.R\n' % opts.prefix
     f2.write(header)
     f2.close()
     print('%s.mlm.farmcpu.R and %s.mlm.farmcpu.slurm have been created.' % (opts.prefix,opts.prefix))
