@@ -306,6 +306,7 @@ def hmp2ped(args):
     f.close()
     print('Job file has been created. You can submit: sbatch -p jclarke %s.hmp2ped.slurm' % prefix)
 
+
 def FixPlinkPed(args):
     """
     %prog map_ped_prefix new_prefix
@@ -317,15 +318,15 @@ def FixPlinkPed(args):
     if len(args) == 0:
         sys.exit(not p.print_help())
     old_prefix, new_prefix, = args
-    f1 = open(new_prefix+'.map', 'w')
-    with open(old_prefix+'.map') as f:
+    f1 = open(new_prefix + '.map', 'w')
+    with open(old_prefix + '.map') as f:
         for i in f:
             j = i.split()
             Chr = j[1].split('_')[1]
             new_l = '%s\t%s\t0\t%s\n' % (Chr, j[1], j[3])
             f1.write(new_l)
-    f2 = open(new_prefix+'.ped', 'w')
-    with open(old_prefix+'.ped') as f:
+    f2 = open(new_prefix + '.ped', 'w')
+    with open(old_prefix + '.ped') as f:
         for i in f:
             j = i.replace('-9\t', '0\t')
             f2.write(j)
@@ -547,24 +548,24 @@ def subsampling(args):
         sys.exit(not p.print_help())
 
     hmp, SMs_file, out_prefix = args
+    print('read hmp file...')
     hmp_df = pd.read_csv(hmp, delim_whitespace=True)
+    print('read SMs file...')
     SMs_df = pd.read_csv(SMs_file, delim_whitespace=True) \
         if opts.header \
         else pd.read_csv(SMs_file, delim_whitespace=True, header=None)
     #SMs_df = SMs_df.dropna(axis=0)
     SMs = SMs_df.iloc[:, 0].astype('str')
-
     hmp_header, hmp_SMs = hmp_df.columns[0:11].tolist(), hmp_df.columns[11:]
-
     excepSMs = SMs[~SMs.isin(hmp_SMs)]
     if len(excepSMs) > 0:
         print('Warning: could not find %s in hmp file, please make \
 sure all samples in your phenoytpes also can be found in hmp file' % excepSMs)
         sys.exit()
     targetSMs = SMs[SMs.isin(hmp_SMs)].tolist()
+    print('%s subsamples.' % len(targetSMs))
     hmp_header.extend(targetSMs)
     new_hmp = hmp_df[hmp_header]
-
     if opts.filter == 'yes':
         print('start filtering...')
         TFs = new_hmp.apply(MAFandparalogous, axis=1)
