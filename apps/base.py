@@ -11,12 +11,13 @@ from optparse import OptionParser as OptionP, OptionGroup, SUPPRESS_HELP
 from JamesLab import __copyright__, __version__
 from JamesLab.apps.natsort import natsorted
 
-JSHELP = "JamesLab utility libraries v%s [%s]\n"%(__version__, __copyright__)
+JSHELP = "JamesLab utility libraries v%s [%s]\n" % (__version__, __copyright__)
 
 try:
     basestring
 except NameError:
     basestring = str
+
 
 class ActionDispatcher(object):
     """
@@ -28,12 +29,13 @@ class ActionDispatcher(object):
     This is controlled through the meta variable, which is automatically
     determined in get_meta().
     """
+
     def __init__(self, actions):
         self.actions = actions
         if not actions:
             actions = [(None, None)]
         self.valid_actions, self.action_helps = zip(*actions)
-    
+
     def get_meta(self):
         args = splitall(sys.argv[0])[-3:]
         args[-1] = args[-1].replace(".py", "")
@@ -54,14 +56,14 @@ class ActionDispatcher(object):
             args[-1] = meta
         else:
             args[-1] += " " + meta
-       
-        help = 'Usage:\n    python -m %s\n\n\n'%('.'.join(args))
-        help += 'Available %ss:\n'%meta
+
+        help = 'Usage:\n    python -m %s\n\n\n' % ('.'.join(args))
+        help += 'Available %ss:\n' % meta
         max_action_len = max(len(action) for action, ah in self.actions)
         for action, action_help in sorted(self.actions):
             action = action.rjust(max_action_len + 4)
-            help += " | ".join((action, action_help[0].upper() + \
-                                        action_help[1:])) + '\n'
+            help += " | ".join((action, action_help[0].upper() +
+                                action_help[1:])) + '\n'
         help += "\n" + JSHELP
         sys.stderr.write(help)
         sys.exit(1)
@@ -73,11 +75,12 @@ class ActionDispatcher(object):
             self.print_help()
         action = sys.argv[1]
         if not action in self.valid_actions:
-            print >> sys.stderr, "[error] %s not a valid %s\n"%(action, meta)
+            print >> sys.stderr, "[error] %s not a valid %s\n" % (action, meta)
             alt = get_close_matches(action, self.valid_actions)
-            print >> sys.stderr, "Did you mean one of these?\n\t%s\n"%(", ".join(alt))
+            print >> sys.stderr, "Did you mean one of these?\n\t%s\n" % (", ".join(alt))
             self.print_help()
         globals[action](sys.argv[2:])
+
 
 class OptionParser(OptionP):
     def __init__(self, doc):
@@ -95,13 +98,12 @@ class OptionParser(OptionP):
             dests.add(o.dest)
         return OptionP.parse_args(self, args)
 
-
     def add_help_from_choices(self, o):
         if o.help == SUPPRESS_HELP:
             return
 
         default_tag = "%default"
-        assert o.help, "Option %s do not have help string"%o
+        assert o.help, "Option %s do not have help string" % o
         help_pf = o.help[:1].upper() + o.help[1:]
         if "[" in help_pf:
             help_pf = help_pf.rsplit("[", 1)[0]
@@ -113,33 +115,32 @@ class OptionParser(OptionP):
             ctext = "|".join(natsorted(str(x) for x in o.choices))
             if len(ctext) > 100:
                 ctext = ctext[:100] + " ... "
-            choice_text = "must be one of %s"%ctext
-            o.help = "%s, %s [default: %s]"%(help_pf, choice_text, default_tag)
+            choice_text = "must be one of %s" % ctext
+            o.help = "%s, %s [default: %s]" % (help_pf, choice_text, default_tag)
         else:
             o.help = help_pf
             if o.default is None:
                 default_tag = "disabled"
             if o.get_opt_string() not in ("--help", "--version") \
-                        and o.action != "store_false":
-                o.help += " [default: %s]"%default_tag
-    
+                    and o.action != "store_false":
+                o.help += " [default: %s]" % default_tag
+
     def set_slurm_opts(self, jn=None, gpu=None, env=None):
         group = OptionGroup(self, 'Slurm job parameters')
         group.add_option('-t', dest='time', default=1,
-                 help='specify time(hour) for slurm header')
+                         help='specify time(hour) for slurm header')
         group.add_option('-m', dest='memory', default=10000,
-                 help='memory(Mb) for slurm header')
+                         help='memory(Mb) for slurm header')
         if jn:
-            group.add_option('-p', dest='prefix',default='myjob',
-                 help='prefix of job name and log file')
+            group.add_option('-p', dest='prefix', default='myjob',
+                             help='prefix of job name and log file')
         if env:
             group.add_option('-e', dest='env',
-                 help='the conda enviroment you need to activate')
+                             help='the conda enviroment you need to activate')
         if gpu:
-            group.add_option('-g', dest='gpu',default='p100', choices=('p100', 'k20', 'k40'),
-                 help='specify the gpu type if you want to submit to a gpu node')
+            group.add_option('-g', dest='gpu', default='p100', choices=('p100', 'k20', 'k40'),
+                             help='specify the gpu type if you want to submit to a gpu node')
         self.add_option_group(group)
-
 
 
 def get_module_docstring(filepath):
@@ -172,16 +173,17 @@ def dmain(mainfile, type='action'):
     for ps in sorted(pyscripts):
         action = op.basename(op.dirname(ps)) \
             if type == 'module' \
-            else op.basename(ps).replace('.py','')
-        if action.startswith('_'): 
+            else op.basename(ps).replace('.py', '')
+        if action.startswith('_'):
             continue
         pd = get_module_docstring(ps)
-        action_help = [x.rstrip(":.,\n") for x in pd.splitlines(True) \
-                if len(x.strip()) > 10 and x[0] != '%'][0] \
-                if pd else "no docstring found"
+        action_help = [x.rstrip(":.,\n") for x in pd.splitlines(True)
+                       if len(x.strip()) > 10 and x[0] != '%'][0] \
+            if pd else "no docstring found"
         actions.append((action, action_help))
     a = ActionDispatcher(actions)
     a.print_help()
+
 
 def glob(pathname, pattern=None):
     """
@@ -191,6 +193,7 @@ def glob(pathname, pattern=None):
     if pattern:
         pathname = op.join(pathname, pattern)
     return natsorted(gl.glob(pathname))
+
 
 def iglob(pathname, patterns):
     """
@@ -208,6 +211,7 @@ def iglob(pathname, patterns):
             matches.append(op.join(root, filename))
     return natsorted(matches)
 
+
 def cutlist(lst, n):
     """
     cut list to different groupts with equal size
@@ -217,28 +221,6 @@ def cutlist(lst, n):
     ctg = pd.qcut(series.index, n)
     grps = series.groupby(ctg)
     for name, group in grps:
-        st = int(name.left+1)
+        st = int(name.left + 1)
         ed = int(name.right)
-        yield '%s-%s'%(st, ed), group
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-
-
-
-
-    
+        yield '%s-%s' % (st, ed), group
