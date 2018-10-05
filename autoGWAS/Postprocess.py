@@ -21,6 +21,7 @@ faOneRecord = op.abspath(op.dirname(__file__))+'/../apps/faOneRecord'
 def main():
     actions = (
         ('fetchMAF', 'calculate the MAFs of selected SNPs'),
+        ('allMAF', 'calculate the MAFs for all SNPs in hmp'),
         ('SigSNPs', 'fetch the first n significant SNPs'),
         ('SharedSigSNPs', 'find shared significant SNPs between gemma and farmcpu'),
         ('fetchEVs', 'fetch effect sizes of selected SNPs'),
@@ -62,6 +63,33 @@ def parseMAF(i):
 
     return j[0], maf, count, minor_idx, major_idx, hetero_idx
     
+def allMAF(args):
+    """
+    %prog hmp 
+
+    calculate MAF for all SNPs in hmp
+    """
+    p = OptionParser(allMAF.__doc__)
+    opts, args = p.parse_args(args)
+
+    if len(args) == 0:
+        sys.exit(not p.print_help())
+    hmp, = args
+    f1 = open('%s.MAF'%hmp, 'w')
+    f1.write('SNPs\tMAF\n')
+    f = open(hmp)
+    f.readline()
+    for i in f:
+        j = i.split()
+        allele1, allele2 = j[1].split('/')
+        genos = ''.join(j[11:])
+        a1, a2 = genos.count(allele1), genos.count(allele2)
+        maf = a1/float(a1+a2) \
+            if a1 <= a2 \
+            else a2/float(a1+a2)
+        f1.write('%s\t%s\n'%(j[0], maf))
+    f.close()
+    f1.close()
 
 def fetchMAF(args):
     """

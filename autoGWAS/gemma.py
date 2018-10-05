@@ -29,7 +29,7 @@ def GLM(args):
     RUN automated GEMMA General Linear Model
     """ 
     p = OptionParser(GLM.__doc__)
-    p.set_slurm_opts(array=False)
+    p.set_slurm_opts(jn=True)
     opts, args = p.parse_args(args)
     
     if len(args) == 0:
@@ -60,7 +60,7 @@ def MLM(args):
         help = 'specify the relatedness matrix file name')
     p.add_option('--pca', default=False, 
         help = 'specify the principle components file name')
-    p.set_slurm_opts(array=False)
+    p.set_slurm_opts(jn=True)
     opts, args = p.parse_args(args)
     
     if len(args) == 0:

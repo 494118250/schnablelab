@@ -22,7 +22,9 @@ def main():
     p.dispatch(globals())
 
 def rmsufix(df):
+    pat = re.compile('\.v[1-3].')
     df['Gene'] = df['Gene'].apply(lambda x:re.split(pat, x)[0])
+
 def genTissueDf(tissue):
     sorghum_idx,millet_idx,brachy_idx = [], [], []
     for j in ['cold', 'normal']:
@@ -42,15 +44,15 @@ def genTissueSpecies(args):
     if len(args) == 0:
         sys.exit(not p.print_help())
     sorghumC, milletC, brachyC, syntenicF = args
-    df_brachy = pd.read_excel(sorghumC)
+    print('read three excel count files')
+    df_sorghum = pd.read_excel(sorghumC)
     df_millet = pd.read_excel(milletC)
-    df_sorghum = pd.read_excel(brachyC)
-    
-    pat = re.compile('\.v[1-3].')
+    df_brachy = pd.read_excel(brachyC)
+    print('remve suffix of gene name') 
     rmsufix(df_brachy)
     rmsufix(df_millet)
     rmsufix(df_sorghum)    
-    
+    print('reorder the columns') 
     rightCols = ['Gene',\
              'cold_leaf1', 'cold_leaf2', 'cold_leaf3',\
              'cold_root1', 'cold_root2', 'cold_root3',\
@@ -61,7 +63,7 @@ def genTissueSpecies(args):
     df_brachy = df_brachy[rightCols]
     df_sorghum = df_sorghum[rightCols]
     df_millet = df_millet[rightCols]
-
+    print('rename columns')
     brachy_cols = ['Gene']
     millet_cols = ['Gene']
     sorghum_cols = ['Gene']
@@ -72,40 +74,48 @@ def genTissueSpecies(args):
     df_brachy.columns = brachy_cols
     df_millet.columns = millet_cols
     df_sorghum.columns = sorghum_cols
+    print(df_brachy.shape)
+    print(df_millet.shape)
+    print(df_sorghum.shape)
 
+    print('concise syntenic gene list')
     df_syc = pd.read_csv(syntenicF, usecols=['sorghum2', 'setaria22', 'brachy'])
+    print(df_syc.shape)
     df_syc = df_syc.replace('No Gene', np.nan).dropna(axis=0, how='any').reset_index(drop=True)
     cd1 = df_syc['sorghum2'].isin(df_sorghum['Gene'])
     cd2 = df_syc['setaria22'].isin(df_millet['Gene'])
     cd3 = df_syc['brachy'].isin(df_brachy['Gene'])
     syn_cond = cd1 & cd2 & cd3
     df_syc_17150 = df_syc[syn_cond]
+    print(df_syc_17150.shape)
     
+    print('concise count files by only keeping concised syntenic genes')
     df_brachy = df_brachy.set_index('Gene')
     df_sorghum = df_sorghum.set_index('Gene')
     df_millet = df_millet.set_index('Gene')
-
     df_brachy = df_brachy.loc[df_syc_17150['brachy'],]
     df_sorghum = df_sorghum.loc[df_syc_17150['sorghum2'],]
     df_millet = df_millet.loc[df_syc_17150['setaria22'],]
-
     df_syc_17150.columns = ['sorghum', 'millet', 'brachy']
     df_syc_17150 = df_syc_17150.reset_index(drop=True)
     df_brachy = df_brachy.reset_index()
     df_sorghum = df_sorghum.reset_index()
     df_millet = df_millet.reset_index()
+    print(df_brachy.shape)
+    print(df_millet.shape)
+    print(df_sorghum.shape)
     
     # leaf
     sorghum_idx,millet_idx,brachy_idx= genTissueDf('leaf')
-    df_leaf = pd.concat([df_syc_17150, df_sorghum[sorghum_idx], df_millet[millet_idx], df_brachy[brachy_idx]], axis=1).head()
+    df_leaf = pd.concat([df_syc_17150, df_sorghum[sorghum_idx], df_millet[millet_idx], df_brachy[brachy_idx]], axis=1)
     df_leaf.to_csv('leaf.csv', index=False)
     # stem
     sorghum_idx,millet_idx,brachy_idx= genTissueDf('stem')
-    df_stem = pd.concat([df_syc_17150, df_sorghum[sorghum_idx], df_millet[millet_idx], df_brachy[brachy_idx]], axis=1).head()
+    df_stem = pd.concat([df_syc_17150, df_sorghum[sorghum_idx], df_millet[millet_idx], df_brachy[brachy_idx]], axis=1)
     df_stem.to_csv('stem.csv', index=False)
     # root
     sorghum_idx,millet_idx,brachy_idx= genTissueDf('root')
-    df_root = pd.concat([df_syc_17150, df_sorghum[sorghum_idx], df_millet[millet_idx], df_brachy[brachy_idx]], axis=1).head()
+    df_root = pd.concat([df_syc_17150, df_sorghum[sorghum_idx], df_millet[millet_idx], df_brachy[brachy_idx]], axis=1)
     df_root.to_csv('root.csv', index=False)
     print('leaf.csv, stem.csv, root.csv generated')
 

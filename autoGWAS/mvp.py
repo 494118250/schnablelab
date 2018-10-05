@@ -57,8 +57,6 @@ def RunMVP(args):
     if len(args) == 0:
         sys.exit(not p.print_help())
     pheno, op, = args  # op: output prefix
-    with open(pheno) as f:
-        SM = f.readline().split()[-1]
     f1 = open('%s.mlm.farmcpu.R' %opts.prefix, 'w')
     f1.write(MVP_Run_header % (pheno, op, op, op, op))
     f1.close()
@@ -73,13 +71,54 @@ def RunMVP(args):
 
 def plot(args):
     """
-    %prog plot gwas_out
+    %prog plot gwas_out result_prefix
 
     plt MVP results using MVP.Report function.
     https://github.com/XiaoleiLiuBio/MVP
     """
-    pass
+    p = OptionParser(plot.__doc__)
+    p.set_slurm_opts(jn=True)
+    opts, args = p.parse_args(args)
+    if len(args) == 0:
+        sys.exit(not p.print_help())
+    gwasfn, op, = args  # op: output prefix
+    f1 = open('%s.plot.R' %op, 'w')
+    cmds = '''
+    library('MVP')
+    myData = read.csv(%s)
+    MVP.Report(myData, plot.type='m', col=c("dodgerblue4","deepskyblue"), LOG10=TRUE, ylim=NULL, th
+reshold=8.9e-8, threshold.col='grey', chr.den.col=NULL, file='png', memo='MLM', dpi=300)
+    '''
+    f1.write(MVP_Run_header % (pheno, op, op, op, op))
+    f1.close()
+    f2 = open('%s.mlm.farmcpu.slurm' %opts.prefix, 'w')
+    header = Slurm_header % (opts.time, opts.memory, opts.prefix,opts.prefix,opts.prefix)
+    header += 'module load R\n'
+    header += 'R CMD BATCH %s.mlm.farmcpu.R\n' % opts.prefix
+    f2.write(header)
+    f2.close()
+    print('%s.mlm.farmcpu.R and %s.mlm.farmcpu.slurm have been created.' % (opts.prefix,opts.prefix))
 
 
 if __name__ == '__main__':
     main()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

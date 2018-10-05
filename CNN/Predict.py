@@ -62,7 +62,7 @@ def Imgs2ArrsBatch(args):
     generate img2arr jobs for all hyperspectral image dirs
     """
     p = OptionParser(Imgs2ArrsBatch.__doc__)
-    p.set_slurm_opts(array=False)
+    p.set_slurm_opts()
     opts, args = p.parse_args(args)
     if len(args) == 0:
         sys.exit(not p.print_help())
@@ -88,7 +88,7 @@ def Predict(args):
     from keras.models import load_model
     import scipy.misc as sm
     p = OptionParser(Predict.__doc__)
-    p.set_slurm_opts(array=False)
+    p.set_slurm_opts()
     opts, args = p.parse_args(args)
     if len(args) == 0:
         sys.exit(not p.print_help())
@@ -126,7 +126,7 @@ def PredictBatch(args):
     generate prediction jobs for all npy files
     """
     p = OptionParser(PredictBatch.__doc__)
-    p.set_slurm_opts(array=False)
+    p.set_slurm_opts()
     opts, args = p.parse_args(args)
     if len(args) == 0:
         sys.exit(not p.print_help())
@@ -154,7 +154,7 @@ def Plot(args):
     p = OptionParser(Plot.__doc__)
     p.add_option("--pattern", default="History_*.p",
         help="specify the pattern of your pickle object file, remember to add quotes [default: %default]")
-    p.set_slurm_opts(array=False)
+    p.set_slurm_opts()
     opts, args = p.parse_args(args)
 
     if len(args) == 0:

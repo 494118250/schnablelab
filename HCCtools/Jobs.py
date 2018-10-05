@@ -99,7 +99,7 @@ def quickjob(args):
     generate a qucik slurm job
     """
     p = OptionParser(quickjob.__doc__)
-    p.set_slurm_opts(array=False)
+    p.set_slurm_opts(jn=True)
     opts, args = p.parse_args(args)
     if len(args) == 0:
         sys.exit(not p.print_help())

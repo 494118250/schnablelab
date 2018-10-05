@@ -25,7 +25,7 @@ def farmcpu(args):
     Run automated FarmCPU
     """
     p = OptionParser(farmcpu.__doc__)
-    p.set_slurm_opts(array=False)
+    p.set_slurm_opts(jn=True)
     opts, args = p.parse_args(args)
     if len(args) == 0:
         sys.exit(not p.print_help())
