@@ -3,3 +3,5 @@ testtmp
 .project
 *.pyc
 __pycache__
+CNN/__pycache__/__init__.cpython-36.pyc
+CNN/__pycache__/__init__.cpython-36.pyc
