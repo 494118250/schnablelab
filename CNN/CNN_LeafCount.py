@@ -8,11 +8,11 @@ import deepplantphenomics as dpp
 from pathlib import Path
 
 
-def train(train_dir,  epc):
+def train(train_dir,  epoch, tensor_flow_dir):
     img_dir = Path(train_dir)
-    model = dpp.DPPModel(debug=True, save_checkpoints=True, report_rate=20)
-    model.set_batch_size(20)
-    model.set_number_of_threads(30)
+    model = dpp.DPPModel(debug=True, save_checkpoints=True, report_rate=20, tensorboard_dir=tensor_flow_dir)
+    model.set_batch_size(30)
+    model.set_number_of_threads(60)
     model.set_image_dimensions(256, 256, 3)
     model.set_resize_images(True)
     model.set_problem_type('regression')
@@ -21,7 +21,7 @@ def train(train_dir,  epc):
     model.set_learning_rate(0.0001)
     model.set_weight_initializer('xavier')
     #model.set_maximum_training_epochs(1)
-    model.set_maximum_training_epochs(int(epc))
+    model.set_maximum_training_epochs(int(epoch))
 
     # Augmentation options
     model.set_augmentation_brightness_and_contrast(True)
@@ -53,7 +53,7 @@ def train(train_dir,  epc):
 
 
 import sys
-if len(sys.argv)==3:
+if len(sys.argv)==4:
     train(*sys.argv[1:])
 else:
-    print('train_dir', 'epoches')
+    print('train_dir', 'epoches', 'tensorflow_dir')
