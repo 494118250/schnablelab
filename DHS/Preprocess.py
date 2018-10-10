@@ -18,6 +18,7 @@ import numpy as np
 def main():
     actions = (
         ('genTissueSpecies', 'generate leaf, stem and root csv files'),
+        ('filterSpeciesTreatment', 'remove DHS with too many 0s either in species or treatment'),
     )
     p = ActionDispatcher(actions)
     p.dispatch(globals())
@@ -118,6 +119,32 @@ def genTissueSpecies(args):
     df_root = pd.concat([df_syc_17150, df_sorghum[sorghum_idx], df_millet[millet_idx], df_brachy[brachy_idx]], axis=1)
     df_root.to_csv('root.csv', index=False)
     print('leaf.csv, stem.csv, root.csv generated')
+
+
+def filterSpeciesTreatment(args):
+    """
+    %prog filterSpeciesTreatment tissue_csv output_prefix
+    tissue_csv (21 columns): sb_gene, si_gene, bd_gene, sb_cold_1-3, sb_normal_1-3, si_cold_1-3, si_normal_1-3, bd_cold_1-3, bd_normal_1-3
+    """
+    p = OptionParser(filterSpeciesTreatment.__doc__)
+    opts, args = p.parse_args(args)
+    if len(args) == 0:
+        sys.exit(not p.print_help())
+    tissue_csv, outprf, = args
+    df = pd.read_csv(tissue_csv)
+
+    jdgs = []
+    for spe in ['sorghum_', 'millet_', 'brachy_']:
+        cols = [i for i in df.columns[3:] if spe in i]
+        spe_judg = (df[cols] == 0).sum(axis=1) <= 3
+        jdgs.append(spe_judg)
+    for trt in ['_cold_', '_normal_']:
+        cols = [i for i in df.columns[3:] if trt in i]
+        trt_judg = (df[cols] == 0).sum(axis=1) <= 5
+        jdgs.append(trt_judg)
+    final_judg = pd.concat(jdgs, axis=1).sum(axis=1) == 5
+    final_df = df[final_judg]
+    final_df.to_csv('%s.csv' % outprf, index=False)
 
 
 if __name__ == "__main__":
