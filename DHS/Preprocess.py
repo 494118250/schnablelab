@@ -134,15 +134,21 @@ def filterSpeciesTreatment(args):
     df = pd.read_csv(tissue_csv)
 
     jdgs = []
-    for spe in ['sorghum_', 'millet_', 'brachy_']:
+    spes, trts = ['sorghum_', 'millet_', 'brachy_'], ['cold_', 'normal_']
+    for spe in spes:
         cols = [i for i in df.columns[3:] if spe in i]
         spe_judg = (df[cols] == 0).sum(axis=1) <= 3
         jdgs.append(spe_judg)
-    for trt in ['_cold_', '_normal_']:
+    for trt in trts:
         cols = [i for i in df.columns[3:] if trt in i]
         trt_judg = (df[cols] == 0).sum(axis=1) <= 5
         jdgs.append(trt_judg)
-    final_judg = pd.concat(jdgs, axis=1).sum(axis=1) == 5
+    for spe in spes:
+        for trt in trts:
+            cols = [i for i in df.columns[3:] if spe + trt in i]
+                jdg = (df[cols] == 0).sum(axis=1) <= 1
+                jdgs.append(jdg)
+    final_judg = pd.concat(jdgs, axis=1).sum(axis=1) == 11
     final_df = df[final_judg]
     final_df.to_csv('%s.csv' % outprf, index=False)
 
