@@ -146,8 +146,8 @@ def filterSpeciesTreatment(args):
     for spe in spes:
         for trt in trts:
             cols = [i for i in df.columns[3:] if spe + trt in i]
-                jdg = (df[cols] == 0).sum(axis=1) <= 1
-                jdgs.append(jdg)
+            jdg = (df[cols] == 0).sum(axis=1) <= 1
+            jdgs.append(jdg)
     final_judg = pd.concat(jdgs, axis=1).sum(axis=1) == 11
     final_df = df[final_judg]
     final_df.to_csv('%s.csv' % outprf, index=False)
