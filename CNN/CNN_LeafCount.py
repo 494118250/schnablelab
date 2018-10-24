@@ -12,7 +12,7 @@ def train(train_dir,  epoch, tensor_flow_dir):
     img_dir = Path(train_dir)
     model = dpp.DPPModel(debug=True, save_checkpoints=True, report_rate=20, tensorboard_dir=tensor_flow_dir)
     model.set_batch_size(30)
-    model.set_number_of_threads(60)
+    model.set_number_of_threads(90)
     model.set_image_dimensions(256, 256, 3)
     model.set_resize_images(True)
     model.set_problem_type('regression')
