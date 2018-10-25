@@ -6,11 +6,17 @@ import numpy as np
 import pickle
 import deepplantphenomics as dpp
 from pathlib import Path
+import os
+import sys
 
 
-def train(train_dir,  epoch, tensor_flow_dir):
+def train(train_dir,  model_name, epoch, tsrbrd_dir):
+    try:
+        os.mkdir(model_name)
+    except:
+        sys.exit('%s has been exist'%model_name)
     img_dir = Path(train_dir)
-    model = dpp.DPPModel(debug=True, save_checkpoints=True, report_rate=20, tensorboard_dir=tensor_flow_dir)
+    model = dpp.DPPModel(debug=True, save_checkpoints=True, report_rate=150, tensorboard_dir=tsrbrd_dir, save_dir=model_name)
     model.set_batch_size(30)
     model.set_number_of_threads(90)
     model.set_image_dimensions(256, 256, 3)
@@ -51,9 +57,7 @@ def train(train_dir,  epoch, tensor_flow_dir):
     # Begin training the regression model
     model.begin_training()
 
-
-import sys
-if len(sys.argv)==4:
+if len(sys.argv)==5:
     train(*sys.argv[1:])
 else:
-    print('train_dir', 'epoches', 'tensorflow_dir')
+    print('train_dir', 'model_name', 'epoches', "tensorboard_dir")
