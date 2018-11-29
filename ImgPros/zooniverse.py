@@ -25,6 +25,7 @@ except ImportError:
 def main():
     actions = (
         ('upload', 'load images to zooniverse'),
+        ('get_export', 'Get annotation and other exports')
     )
     p = ActionDispatcher(actions)
     p.dispatch(globals())
@@ -33,10 +34,8 @@ def main():
 def upload(args):
     """
     %prog upload img_directory zoo_project_id --subject subject_setID
-
-    Desc: Upload images from img_directory to zooniverse project with zoo_project_id.
     """
-    p = OptionParser(upload.__doc__)
+    p = OptionParser(upload.__doc__, usage="Upload images from img_directory to zooniverse project with zoo_project_id.")
     p.add_option('--subject', default=False,
         help = 'Designate a subject set id')
     p.add_option('--manifest', default='manifest.csv',
