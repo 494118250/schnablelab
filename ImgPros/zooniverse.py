@@ -100,7 +100,7 @@ def get_export(args):
     try:
         Panoptes.connect(username=un, password=pw)
         project = Project.find(id = proj_id)
-        project
+        project 
 
 
 def __get_zoo_credentials():
