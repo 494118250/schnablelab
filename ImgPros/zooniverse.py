@@ -11,10 +11,11 @@ import sys
 import os
 import traceback as tb
 from glob import glob
-
+from datetime import datetime as dt
+import csv
 
 try:
-    from panoptes_client import panoptes, Panoptes, user, Project, SubjectSet, Subject
+    from panoptes_client import exportable, panoptes, Panoptes, user, Project, SubjectSet, Subject
 except ImportError:
     print("panoptes_client package could not be imported. To install use:")
     print("> pip install panoptes-client")
@@ -82,26 +83,42 @@ def __generate_manifest(img_dir):
     # TODO: get all files that are png or jpg
 
 
-def get_export(args):
+def export(args):
     """
     %prog get_export project_id
 
-    Get classification or other export
+    Get classifications or other export
     """
     p = OptionParser(upload.__doc__)
-    p.add_option('--type', default='classification'
-                help='specify the type of export')
+    p.add_option('-t', '--type', default='classifications'
+                help='specify the type of export',
+                epilog='Options: []')
+
     opts, args = p.parse_args(args)
 
     if len(args) == 0:
         sys.exit(not p.print_help())
+
+    output_dir = args
+
+    if not os.path.isdir(output_dir):
+        print("Output directory is not created")
+        quit()
 
     un, pw, sc = __get_zoo_credentials()
 
     try:
         Panoptes.connect(username=un, password=pw)
         project = Project.find(id = proj_id)
-        project
+        print("Getting export, this may take some time.")
+        export = project.get_export(opts.type)
+        with open(os.path.join(output_dir, \
+            dt.now().strftime('zoo_export.%b-%d-%G-%I%:M%p.csv')), \
+            'w') as zoof:
+            zoof.write(export)
+
+    except:
+        tb.print_exc()
 
 
 def __get_zoo_credentials():
