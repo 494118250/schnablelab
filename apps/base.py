@@ -83,8 +83,11 @@ class ActionDispatcher(object):
 
 
 class OptionParser(OptionP):
-    def __init__(self, doc):
-        OptionP.__init__(self, doc, epilog=JSHELP)
+    def __init__(self, doc, usage=None):
+        if usage:
+            OptionP.__init__(self, doc, usage=usage, epilog=JSHELP)
+        else:
+            OptionP.__init__(self, doc, epilog=JSHELP)
 
     def parse_args(self, args=None):
         dests = set()
