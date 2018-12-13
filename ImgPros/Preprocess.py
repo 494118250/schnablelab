@@ -79,7 +79,7 @@ def PlantHull(args):
             seg_crop = seg.crop((left, top, right, down))
             seg_crop.save(inputImg.replace('.png', '.seg.crp.png'))
         else:
-            seq.save(inputImg.replace('.png', '.seg.png'))      
+            seg.save(inputImg.replace('.png', '.seg.png'))      
     chull_diff = np.where(thresh_ivt == 255, 2, chull)
     misc.imsave('%s.hull.png' % (Path(inputImg).stem), chull_diff)
     PixelCount = np.sum(chull)
