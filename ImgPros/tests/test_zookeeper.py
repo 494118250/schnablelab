@@ -11,15 +11,32 @@ import sys
 from contextlib import contextmanager
 from io import StringIO
 import panoptes_client as pan
+from datetime import datetime as dt
+from collections import deque
+from random import random
+
 
 cred = {'un': 'alejandropages', 'pw': '12Buckl3mYSh03'}
 
-img_dir = osp.join(osp.dirname(__file__), 'data', 'imgs')
-img_no_man = osp.join(osp.dirname(__file__), 'data', 'imgs_no_manifest')
+img_dir = osp.abspath('/home/apages/SchnableLab/JamesLab/ImgPros/tests/data/imgs')
+img_no_man = osp.abspath('/home/apages/SchnableLab/JamesLab/ImgPros/tests/data/imgs_no_manifest')
 real_proj_id = '7802'
 real_subjset_id = '67200'
 fake_id = '567'
 
+
+def test_upload():
+
+    args = [cred['un'], str(int(random() * 1000))]
+
+    with mock.patch('builtins.input', side_effect=args):
+        assert zookeeper.upload([img_no_man, '6761'])
+
+    os.remove(osp.join(img_no_man, 'manifest.csv'))
+
+'''mock.patch('builtins.input', side_effect=args),\
+     '''
+r'''
 
 def test___check_dir():
     with pytest.raises(IOError) as e:
@@ -90,3 +107,22 @@ def test_upload():
 def test_export():
 
     zookeeper.export([fake_id, osp.dirname(__file__)])
+
+def test___log_error():
+
+    messages = ("Error Logging Message", "args test 1", "args test 2")
+
+    zookeeper.__log_error(messages[0])
+    with pytest.raises(pan.panoptes.PanoptesAPIException):
+        e = pan.panoptes.PanoptesAPIException
+        e.args = messages[1:3]
+        zookeeper.__log_error("TEST MESSAGE (error logging)", e)
+
+    # matches time isoformat with optional '.(microseconds)'
+    PATTERN = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.?\d*?: " +
+                         "TEST MESSAGE (error logging)\n> args test 1\n> args test 2\n")
+
+    with open(osp.normpath('../zoo_load.err'), 'r') as file:
+        last3 = deque(file, 3)
+        assert PATTERN.match("".join(last3))
+'''

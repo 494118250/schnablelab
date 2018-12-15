@@ -19,3 +19,95 @@ Checking directory DNE
 Checking directory doesntexist
 Checking directory NonexistentFile
 Checking directory DNE
+Creating new subject set
+Loading images fom manifest.
+Creating new subject set
+Loading images fom manifest.
+Creating new subject set
+Loading images fom manifest.
+Creating new subject set
+Generating manifest
+Manifest being generated with fields: [ id, filename ]
+4 subjects written to manifest.
+Loading images fom manifest.
+Error on row: OrderedDict([('id', '121518-142058-0000'), ('filename', '/home/apages/SchnableLab/JamesLab/ImgPros/tests/data/imgs_no_manifest/33-CH9_2018-08-27_108.jpg')])
+> {"links"=>"did not contain a required property of 'project'"}
+Error on row: OrderedDict([('id', '121518-142058-0001'), ('filename', '/home/apages/SchnableLab/JamesLab/ImgPros/tests/data/imgs_no_manifest/33-CH9_2018-08-26_108.jpg')])
+> {"links"=>"did not contain a required property of 'project'"}
+Error on row: OrderedDict([('id', '121518-142058-0002'), ('filename', '/home/apages/SchnableLab/JamesLab/ImgPros/tests/data/imgs_no_manifest/33-CH9_2018-08-21_108.jpg')])
+> {"links"=>"did not contain a required property of 'project'"}
+Error on row: OrderedDict([('id', '121518-142058-0003'), ('filename', '/home/apages/SchnableLab/JamesLab/ImgPros/tests/data/imgs_no_manifest/33-CH9_2018-08-24_108.jpg')])
+> {"links"=>"did not contain a required property of 'project'"}
+Upload completed at 12/1544905259/18 14:20:59
+0 of 4 images loaded
+Remember to link your workflow to this subject set
+Creating new subject set
+Generating manifest
+Manifest being generated with fields: [ id, filename ]
+4 subjects written to manifest.
+Loading images fom manifest.
+Error on row: OrderedDict([('id', '121518-142248-0000'), ('filename', '/home/apages/SchnableLab/JamesLab/ImgPros/tests/data/imgs_no_manifest/33-CH9_2018-08-27_108.jpg')])
+> {"links"=>"did not contain a required property of 'project'"}
+Error on row: OrderedDict([('id', '121518-142248-0001'), ('filename', '/home/apages/SchnableLab/JamesLab/ImgPros/tests/data/imgs_no_manifest/33-CH9_2018-08-26_108.jpg')])
+> {"links"=>"did not contain a required property of 'project'"}
+Error on row: OrderedDict([('id', '121518-142248-0002'), ('filename', '/home/apages/SchnableLab/JamesLab/ImgPros/tests/data/imgs_no_manifest/33-CH9_2018-08-21_108.jpg')])
+> {"links"=>"did not contain a required property of 'project'"}
+Error on row: OrderedDict([('id', '121518-142248-0003'), ('filename', '/home/apages/SchnableLab/JamesLab/ImgPros/tests/data/imgs_no_manifest/33-CH9_2018-08-24_108.jpg')])
+> {"links"=>"did not contain a required property of 'project'"}
+Upload completed at 12/1544905369/18 14:22:49
+0 of 4 images loaded
+Remember to link your workflow to this subject set
+Creating new subject set
+Generating manifest
+Manifest being generated with fields: [ id, filename ]
+4 subjects written to manifest.
+Loading images fom manifest.
+Creating new subject set
+Loading images fom manifest.
+Creating new subject set
+Generating manifest
+Manifest being generated with fields: [ id, filename ]
+4 subjects written to manifest.
+Loading images fom manifest.
+Creating new subject set
+Generating manifest
+Manifest being generated with fields: [ id, filename ]
+4 subjects written to manifest.
+Loading images fom manifest.
+Creating new subject set
+Generating manifest
+Manifest being generated with fields: [ id, filename ]
+4 subjects written to manifest.
+Loading images fom manifest.
+Creating new subject set
+Generating manifest
+Manifest being generated with fields: [ id, filename ]
+4 subjects written to manifest.
+Loading images fom manifest.
+Error on row: OrderedDict([('id', '121518-143002-0000'), ('filename', '/home/apages/SchnableLab/JamesLab/ImgPros/tests/data/imgs_no_manifest/33-CH9_2018-08-27_108.jpg')])
+> {"links"=>"did not contain a required property of 'project'"}
+Error on row: OrderedDict([('id', '121518-143002-0001'), ('filename', '/home/apages/SchnableLab/JamesLab/ImgPros/tests/data/imgs_no_manifest/33-CH9_2018-08-26_108.jpg')])
+> {"links"=>"did not contain a required property of 'project'"}
+Error on row: OrderedDict([('id', '121518-143002-0002'), ('filename', '/home/apages/SchnableLab/JamesLab/ImgPros/tests/data/imgs_no_manifest/33-CH9_2018-08-21_108.jpg')])
+> {"links"=>"did not contain a required property of 'project'"}
+Error on row: OrderedDict([('id', '121518-143002-0003'), ('filename', '/home/apages/SchnableLab/JamesLab/ImgPros/tests/data/imgs_no_manifest/33-CH9_2018-08-24_108.jpg')])
+> {"links"=>"did not contain a required property of 'project'"}
+Upload completed at 12/1544905802/18 14:30:02
+0 of 4 images loaded
+Remember to link your workflow to this subject set
+Creating new subject set
+Generating manifest
+Manifest being generated with fields: [ id, filename ]
+4 subjects written to manifest.
+Loading images fom manifest.
+Error on row: OrderedDict([('id', '121518-143055-0000'), ('filename', '/home/apages/SchnableLab/JamesLab/ImgPros/tests/data/imgs_no_manifest/33-CH9_2018-08-27_108.jpg')])
+> {"links"=>"did not contain a required property of 'project'"}
+Error on row: OrderedDict([('id', '121518-143055-0001'), ('filename', '/home/apages/SchnableLab/JamesLab/ImgPros/tests/data/imgs_no_manifest/33-CH9_2018-08-26_108.jpg')])
+> {"links"=>"did not contain a required property of 'project'"}
+Error on row: OrderedDict([('id', '121518-143055-0002'), ('filename', '/home/apages/SchnableLab/JamesLab/ImgPros/tests/data/imgs_no_manifest/33-CH9_2018-08-21_108.jpg')])
+> {"links"=>"did not contain a required property of 'project'"}
+Error on row: OrderedDict([('id', '121518-143055-0003'), ('filename', '/home/apages/SchnableLab/JamesLab/ImgPros/tests/data/imgs_no_manifest/33-CH9_2018-08-24_108.jpg')])
+> {"links"=>"did not contain a required property of 'project'"}
+Upload completed at 12/1544905856/18 14:30:56
+0 of 4 images loaded
+Remember to link your workflow to this subject set
