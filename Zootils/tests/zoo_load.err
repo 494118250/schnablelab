@@ -111,3 +111,7 @@ Error on row: OrderedDict([('id', '121518-143055-0003'), ('filename', '/home/apa
 Upload completed at 12/1544905856/18 14:30:56
 0 of 4 images loaded
 Remember to link your workflow to this subject set
+Could not connect to zooniverse project
+> Could not find project with id='567'
+Could not connect to zooniverse project
+> Invalid email or password.

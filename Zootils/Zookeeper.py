@@ -8,7 +8,6 @@ from JamesLab.apps.base import ActionDispatcher, OptionParser
 import sys
 import os.path as osp
 import os
-import errno
 from datetime import datetime as dt
 import csv
 import logging
@@ -30,7 +29,8 @@ log.addHandler(logging.StreamHandler())
 
 
 try:
-    import panoptes_client as pan
+    from panoptes_client import Panoptes, Project, SubjectSet
+    from panoptes_client.panoptes import PanoptesAPIException
 except ImportError:
     log.info("panoptes_client package could not be imported. To install use:")
     log.info("> pip install panoptes-client")
@@ -50,13 +50,13 @@ def main():
 
 def manifest(args):
     '''
-    %prog manifest img_directory
+    %prog manifest imgdirectory
 
     Does:
         Generates a manifest inside the specified image directory.
 
     Args:
-        ~: img_dir
+        ~: imgdir
             -type: str
             -desc: The image directory in which to generate the manifest.
     Returns:
@@ -69,27 +69,27 @@ def manifest(args):
     if len(sys.argv) != 1:
         exit(not p.print_help())
 
-    img_dir = args[1]
+    imgdir = args[1]
 
-    __generate_manifest(img_dir)
+    __generate_manifest(imgdir)
     return
 
 
-def upload(args, un=None, pw=None, dispname=None, subjsetid=None):
+def upload(imgdir, projid, opts=None, **kwargs):
     '''
-    %prog upload img_dir zoo_proj_id
+    %prog upload imgdir zoo_proj_id
 
     Does:
         - Uploads images from the specified image directory to zooniverse
           project specified by zoo_project_id.
         - Will also generate a manifest if one is not already present inside
-          img_dir.
+          imgdir.
 
     Note:
         - If using a custom manifest
 
     Args:
-        - img_dir
+        - imgdir
             -type: str
             -desc: The directory of the images to be uploaded
         - proj_id
@@ -97,45 +97,23 @@ def upload(args, un=None, pw=None, dispname=None, subjsetid=None):
             -desc: The zooniverse project id to upload the images to.
     Returns:
         None
-
     '''
-    p = OptionParser(upload.__doc__)
-    p.add_option('-s', '--subject', default=False,
-                 help='Designate a subject set id.')
-    p.add_option('-q', '--quiet', default=False,
-                 help='Silences output when uploading images to zooniverse.')
-    p.add_option('-w', '--workflow', default=None,
-                 help='Designate a workflow id to link this subject set.')
-    # TODO: ??
-    p.add_option('-c', '--convert', default=False,
-                 help="Compress and convert files to jpg for faster load times"
-                 + " on zooniverse.\n"
-                 + " Command: magick -strip -interlace Plane -quality 85%"
-                 + " -format jpg <img_directory>/<filename>.png")
-
-    opts, args = p.parse_args(args)
-
-    if len(args) != 2:
-        p.print_help()
-        exit(False)
-
-    img_dir, proj_id = args
 
     if opts.quiet:
         log.setLevel(logging.INFO)
 
-    if not osp.isdir(img_dir):
-        log.error("Image directory '{}' does not exist".format(img_dir))
-        exit(False)
+    if not osp.isdir(imgdir):
+        log.error("Image directory '{}' does not exist".format(imgdir))
+        return False
 
     try:
-        project = __connect_zoo(proj_id)
-    except pan.panoptes.PanoptesAPIException:
+        project = __connect_zoo(projid)
+    except PanoptesAPIException:
         exit(False)
 
-    if not opts.subject and not subjsetid:
+    if not opts.subject and 'subjsetid' not in kwargs:
         log.info("Creating new subject set")
-        subject_set = pan.SubjectSet()
+        subject_set = SubjectSet()
         subject_set.links.project = project
 
         if dispname:
@@ -169,7 +147,7 @@ def upload(args, un=None, pw=None, dispname=None, subjsetid=None):
                 log.error("> " + arg)
             exit(False)
 
-    mani_exists = osp.isfile(osp.join(img_dir, 'manifest.csv'))
+    mani_exists = osp.isfile(osp.join(imgdir, 'manifest.csv'))
 
     if opts.convert:
         log.info("Compressing and converting to jpg")
@@ -177,16 +155,16 @@ def upload(args, un=None, pw=None, dispname=None, subjsetid=None):
             log.warning("If using a custom manifest, image filenames must"
                         + " use .jpg extension.")
 
-        __convert(img_dir)
+        __convert(imgdir)
 
     if not mani_exists:
         log.info("Generating manifest")
         if opts.convert:
-            __generate_manifest(img_dir, ext='jpg')
+            __generate_manifest(imgdir, ext='jpg')
         else:
-            __generate_manifest(img_dir)
+            __generate_manifest(imgdir)
 
-    mfile = open(osp.join(img_dir, 'manifest.csv'), 'r')
+    mfile = open(osp.join(imgdir, 'manifest.csv'), 'r')
     fieldnames = mfile.readline().strip().split(",")
     mfile.seek(0)
     reader = csv.DictReader(mfile)
@@ -285,14 +263,14 @@ HELPER FUNCTIONS
 '''
 
 
-def __convert(img_dir):
+def __convert(imgdir):
 
     cmd = ["mogrify", "-strip", "-quality", "85%", "-format", "jpg"]
 
     try:
-        proc_ret = run(cmd.append([osp.join(img_dir, "*.jpg"),
-                                   osp.join(img_dir, "*.png"),
-                                   osp.join(img_dir, "*.tiff")]),
+        proc_ret = run(cmd.append([osp.join(imgdir, "*.jpg"),
+                                   osp.join(imgdir, "*.png"),
+                                   osp.join(imgdir, "*.tiff")]),
                        capture_output=True)
     except CalledProcessError as e:
         log.error("Failed to compress images")
@@ -303,7 +281,7 @@ def __convert(img_dir):
     return
 
 
-def __generate_manifest(img_dir, ext=None):
+def __generate_manifest(imgdir, ext=None):
     '''
     Does:
         Generates a generic manifest in the specified image directory.
@@ -311,7 +289,7 @@ def __generate_manifest(img_dir, ext=None):
         the filename.
 
     Args
-        - img_dir
+        - imgdir
             -type: str
             -desc: image directory for which to generate manifest
         - return_handle
@@ -327,12 +305,12 @@ def __generate_manifest(img_dir, ext=None):
         - Supported image types: [ tiff, jpg, png ] - can easily append
     '''
 
-    if not osp.isdir(img_dir):
-        log.error("Directory '{}' does not exist".format(img_dir))
+    if not osp.isdir(imgdir):
+        log.error("Directory '{}' does not exist".format(imgdir))
 
     log.info("Manifest being generated with fields: [ id, filename ]")
 
-    mfile = open(osp.join(img_dir, 'manifest.csv'), 'w+')
+    mfile = open(osp.join(imgdir, 'manifest.csv'), 'w+')
     idtag = dt.now().strftime("%m%d%y-%H%M%S")
     writer = csv.writer(mfile)
     writer.writerow(["id", "filename"])
@@ -345,10 +323,10 @@ def __generate_manifest(img_dir, ext=None):
 
     img_count = 0
 
-    for id, filename in enumerate(os.listdir(img_dir)):
+    for id, filename in enumerate(os.listdir(imgdir)):
         if PATTERN.match(filename):
             writer.writerow(["{}-{:04d}".format(idtag, id),
-                             osp.join(img_dir, filename)])
+                             osp.join(imgdir, filename)])
             img_count += 1
         if img_count == 9999:
             log.warning("Zooniverse's default limit of subjects per user is"

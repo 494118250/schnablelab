@@ -1,4 +1,4 @@
-import JamesLab.ImgPros.zookeeper as zookeeper
+from JamesLab.Zookeeper.zookeeper import zootils
 import os.path as osp
 import csv
 import os
@@ -15,7 +15,6 @@ from datetime import datetime as dt
 from collections import deque
 from random import random
 
-
 cred = {'un': 'alejandropages', 'pw': '12Buckl3mYSh03'}
 
 img_dir = osp.abspath('/home/apages/SchnableLab/JamesLab/ImgPros/tests/data/imgs')
@@ -24,15 +23,30 @@ real_proj_id = '7802'
 real_subjset_id = '67200'
 fake_id = '567'
 
-
+'''
 def test_upload():
 
     args = [cred['un'], str(int(random() * 1000))]
 
     with mock.patch('builtins.input', side_effect=args):
-        assert zookeeper.upload([img_no_man, '6761'])
+        assert zootils.upload([img_no_man, '6761'])
 
     os.remove(osp.join(img_no_man, 'manifest.csv'))
+'''
+
+def test_connect():
+
+    zoo = zootils()
+
+    with pytest.raises(pan.panoptes.PanoptesAPIException):
+        zoo._connect(fake_id, un=cred['un'], pw=cred['pw'])
+
+    with pytest.raises(pan.panoptes.PanoptesAPIException):
+        zoo._connect(real_proj_id, un='foo', pw='bar')
+
+    assert zoo._connect(real_proj_id, un=cred['un'], pw=cred['pw'])
+    assert hasattr(zoo, 'project')
+
 
 '''mock.patch('builtins.input', side_effect=args),\
      '''
@@ -62,15 +76,7 @@ def test_manifest(capsys):
 
 
 
-def test___connect_zoo():
 
-    with pytest.raises(pan.panoptes.PanoptesAPIException):
-        zookeeper.__connect_zoo(fake_id, un=cred['un'], pw=cred['pw'])
-
-    with pytest.raises(pan.panoptes.PanoptesAPIException):
-        zookeeper.__connect_zoo(real_proj_id, un='foo', pw='bar')
-
-    assert type(zookeeper.__connect_zoo(real_proj_id, un=cred['un'], pw=cred['pw'])) == pan.project.Project
 
 
 
