@@ -3,7 +3,6 @@ import os.path as osp
 import os
 from datetime import datetime as dt
 import csv
-import logging
 import re
 
 

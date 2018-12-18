@@ -24,7 +24,9 @@ def get_logger():
     log.addHandler(logging.FileHandler('zootils.err'))
     log.addHandler(logging.StreamHandler())
 
+
 log = get_logger()
+
 
 def convert(imgdir, ext=None):
     ''' Image compression and conversion to jpg '''
