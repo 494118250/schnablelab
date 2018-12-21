@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 from PIL import Image
 from JamesLab.apps.base import ActionDispatcher, OptionParser, glob
-from JamesLab.apps.header import Slurm_header
+from JamesLab.apps.header import Slurm_header, Slurm_gpu_constraint_header, Slurm_gpu_header
 from JamesLab.apps.natsort import natsorted
 from glob import glob
 from PIL import Image
@@ -24,20 +24,44 @@ from pathlib import Path
 
 def main():
     actions = (
-        ('Predict', 'using trained model to make prediction'),
-        ('PredictBatch', 'generate all slurm jobs of prediction'),
+        ('Predict_keras', 'using keras model to make prediction'),
+        ('Predict_dpp', 'using dpp model to make prediction'),
             )
     p = ActionDispatcher(actions)
     p.dispatch(globals())
 
-def Predict(args):
+def Predict_dpp(args):
+    """
+    %prog model_dir img_dir output_prefix
+    using your trained dpp model to make predictions.
+    """
+    p = OptionParser(Predict_dpp.__doc__)
+    p.set_slurm_opts(jn=True, gpu=True, env=True)
+    opts, args = p.parse_args(args)
+    if len(args) == 0:
+        sys.exit(not p.print_help())
+    model_dir, img_dir, otp = args
+
+    header = Slurm_gpu_constraint_header%(opts.time, opts.memory, otp, otp, otp, opts.gpu) \
+        if opts.gpu \
+        else Slurm_gpu_header%(opts.time, opts.memory, otp, otp, otp)
+    if opts.env:
+        header += 'ml anaconda \nsource activate %s\n'%opts.env
+    cmd = "python -m JamesLab.CNN.CNN_LeafCount_Predict %s %s %s.csv\n"%(model_dir, img_dir, otp)
+    header += cmd
+    f0 = open('%s.slurm'%otp, 'w')
+    f0.write(header)
+    f0.close()
+    print('%s.slurm generate, you can submit to a gpu node now.'%otp)
+
+def Predict_keras(args):
     """
     %prog model_name img_dir target_size output_prefix
     using your trained model to make predictions. Target size is the input_shape when
     you train your model. an invalid target_size example is 224,224,3
     """
     from keras.models import load_model
-    p = OptionParser(Predict.__doc__)
+    p = OptionParser(Predict_keras.__doc__)
     p.set_slurm_opts()
     p.add_option('--img_num', default='all',
                  help='specify how many images used for prediction in the dir')
@@ -74,10 +98,3 @@ def Predict(args):
 
 if __name__ == "__main__":
     main()
-
-
-
-
-
-
-

@@ -14,16 +14,18 @@ import pickle
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from PIL import Image
-from JamesLab.apps.base import ActionDispatcher, OptionParser, glob
-from JamesLab.apps.header import Slurm_header
+from JamesLab.apps.base import cutlist, ActionDispatcher, OptionParser, glob
+from JamesLab.apps.header import Slurm_header, Slurm_gpu_header
 from JamesLab.apps.natsort import natsorted
 from glob import glob
+from pathlib import Path
 
 def main():
     actions = (
         ('Plot', 'plot training model history'),
         ('Predict', 'using trained model to make prediction'),
-        ('PredictBatch', 'generate all slurm jobs of prediction'),
+        ('PredictSlurmCPU', 'generate slurm CPU job of prediction'),
+        ('PredictSlurmGPU', 'generate slurm GPU job of prediction'),
         ('Imgs2Arrs', 'convert hyperspectral images under a dir to a numpy array object'),
         ('Imgs2ArrsBatch', 'generate slurm job convert HyperImages to NPY for all hyperspectral image dirs'),
             )
@@ -81,68 +83,104 @@ def Imgs2ArrsBatch(args):
 
 def Predict(args):
     """
-    %prog model_name predict_data_npy output_prefix
-    using your trained model to make predictions.
+    %prog model_name npy_pattern('CM*.npy') range(start-end, hcc jobs style)
+    using your trained model to make predictions on selected npy files.
     The pred_data is a numpy array object which has the same number of columns as the training data.
     """
     from keras.models import load_model
     import scipy.misc as sm
     p = OptionParser(Predict.__doc__)
-    p.set_slurm_opts()
     opts, args = p.parse_args(args)
     if len(args) == 0:
         sys.exit(not p.print_help())
-    model, npy, otp = args
-
-    try:
-        test_npy = np.load(npy) # 8000*243
-    except IOError:
-        print('numpy array object file %s does not exist.'%npy)
-    npy_shape = test_npy.shape
+    model, npy_pattern,jobrange, = args
+    start = int(jobrange.split('-')[0])
+    end = int(jobrange.split('-')[1])
     
-    test_npy_2d = test_npy.reshape(npy_shape[0]*npy_shape[1], npy_shape[2])
-    print('testing data shape:', test_npy_2d.shape)
-
+    npys = glob(npy_pattern)[start:end]
+    print('there are %s npys need to predicted.'%len(npys))
     my_model = load_model(model)
-    pre_prob = my_model.predict(test_npy_2d)
-    predictions = pre_prob.argmax(axis=1) # this is a numpy array
-    predictions = predictions.reshape(npy_shape[0], npy_shape[1])
-    df = pd.DataFrame(predictions)
-    """
-    0: background
-    1: leaf
-    2: stem
-    3: panicle
-    """
-    df1 = df.replace(0, 255).replace(1, 127).replace(2, 253).replace(3, 190)
-    df2 = df.replace(0, 255).replace(1, 201).replace(2, 192).replace(3, 174)
-    df3 = df.replace(0, 255).replace(1, 127).replace(2, 134).replace(3, 212) 
-    arr = np.stack([df1.values, df2.values, df3.values], axis=2)
-    sm.imsave('%s.png'%otp, arr)
+    
+    for npy in npys:
+        print(npy)
+        test_npy = np.load(npy)
+        npy_shape = test_npy.shape
+        test_npy_2d = test_npy.reshape(npy_shape[0]*npy_shape[1], npy_shape[2])
+        print('testing data shape:', test_npy_2d.shape)
+        pre_prob = my_model.predict(test_npy_2d)
+        predictions = pre_prob.argmax(axis=1) # this is a numpy array
+        predictions = predictions.reshape(npy_shape[0], npy_shape[1])
+        df = pd.DataFrame(predictions)
+        df1 = df.replace(0, 255).replace(1, 127).replace(2, 253).replace(3, 190)#0: background; 1: leaf; 2: stem; 3: panicle
+        df2 = df.replace(0, 255).replace(1, 201).replace(2, 192).replace(3, 174)
+        df3 = df.replace(0, 255).replace(1, 127).replace(2, 134).replace(3, 212) 
+        arr = np.stack([df1.values, df2.values, df3.values], axis=2)
+        opt = npy.split('/')[-1].split('.npy')[0]+'.prd'
+        sm.imsave('%s.png'%opt, arr)
+        print('Done!')
 
-def PredictBatch(args):
+def PredictSlurmCPU(args):
     """
-    %prog model_name npyPattern("CM*.npy")
-    generate prediction jobs for all npy files
+    %prog model_name npyPattern("CM*.npy") job_n
+    generate prediction CPU jobs for all npy files
     """
-    p = OptionParser(PredictBatch.__doc__)
-    p.set_slurm_opts()
+    p = OptionParser(PredictSlurmCPU.__doc__)
+    p.set_slurm_opts(jn=True)
     opts, args = p.parse_args(args)
     if len(args) == 0:
         sys.exit(not p.print_help())
-    mn, pattern, = args
-    all_npy = glob(pattern)
-    for i in all_npy:
-        out_prefix = i.split('/')[-1].split('.npy')[0]
-        jobname = out_prefix + '.pred'
-        cmd = 'python -m JamesLab.CNN.Predict Predict %s %s %s\n'%(mn, i, out_prefix)
-        header = Slurm_header%(opts.time, opts.memory, jobname, jobname, jobname)
+    #print(args)
+    mn, npy_pattern, jobn, = args
+    if opts.prefix == 'myjob':
+        print('specify job name prefix!') 
+        sys.exit()
+
+    npys = glob(npy_pattern)
+    print(len(npys))
+    grps = cutlist(npys, int(jobn))
+    for gn, grp in grps:
+        st, ed = gn.split('-')
+        ed = int(ed)+1
+        gn = '%s-%s'%(st, ed)
+        cmd = "python -m JamesLab.CNN.Predict Predict %s '%s' %s\n"%(mn, npy_pattern, gn)
+        opt = '%s.%s'%(opts.prefix, gn)
+        header = Slurm_header%(opts.time, opt, opt, opt, opt)
         header += "ml anaconda\nsource activate Py3KerasTensorCPU\n"
         header += cmd
-        jobfile = open('%s.pred.slurm'%out_prefix, 'w')
-        jobfile.write(header)
-        jobfile.close()
-        print('%s.slurm prediction job file generated!'%jobname)
+        with open('%s.cpu.slurm'%opt, 'w') as f:
+            f.write(header)
+        print('%s.cpu.slurm prediction CPU job file generated!'%opt)
+
+def PredictSlurmGPU(args):
+    """
+    %prog model_name npyPattern("CM*.npy") job_n
+    generate prediction GPU jobs for all npy files
+    """
+    p = OptionParser(PredictSlurmGPU.__doc__)
+    p.set_slurm_opts(jn=True)
+    opts, args = p.parse_args(args)
+    if len(args) == 0:
+        sys.exit(not p.print_help())
+    mn, npy_pattern, jobn, = args
+    if opts.prefix == 'myjob':
+        print('specify job name prefix!') 
+        sys.exit()
+
+    npys = glob(npy_pattern)
+    print(len(npys))
+    grps = cutlist(npys, int(jobn))
+    for gn, grp in grps:
+        st, ed = gn.split('-')
+        ed = int(ed)+1
+        gn = '%s-%s'%(st, ed)
+        cmd = "python -m JamesLab.CNN.Predict Predict %s '%s' %s\n"%(mn, npy_pattern, gn)
+        opt = '%s.%s'%(opts.prefix, gn)
+        header = Slurm_gpu_header%(opts.time, opts.memory, opt, opt, opt)
+        header += "ml anaconda\nsource activate MCY\n"
+        header += cmd
+        with open('%s.gpu.slurm'%opt, 'w') as f:
+            f.write(header)
+        print('%s.gpu.slurm prediction GPU job file generated!'%opt)
 
 def Plot(args): 
     """

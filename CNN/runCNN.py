@@ -9,6 +9,7 @@ from JamesLab.apps.base import ActionDispatcher, OptionParser
 from JamesLab.apps.header import Slurm_header, Slurm_gpu_header
 from JamesLab.apps.natsort import natsorted
 from numpy.random import uniform
+from pathlib import Path
 
 vgg_py = op.abspath(op.dirname(__file__))+'/VGG.py'    
 LNN_py = op.abspath(op.dirname(__file__))+'/LinearClassifer.py'    
@@ -24,29 +25,29 @@ def main():
 
 def LeafCounts(args):
     """
-    %prog train_dir model_name
+    %prog train_dir label_fn_in_train_dir model_results_dir
 
     Run deep plant phenomics model
     """
     p = OptionParser(LeafCounts.__doc__)
     p.add_option('--tensorboard', default='my_tensorboard',
         help = 'specify the tensorboard dir name')
-    p.add_option('--epc', default=100,
-        help = 'specify number of epoches')
+    p.add_option('--epc', default=500,
+        help = 'specify number of epoches. for leaf counting use 500')
     p.set_slurm_opts(jn=True, gpu=True)
     opts, args = p.parse_args(args)
     if len(args) == 0:
         sys.exit(not p.print_help())
-    train_dir, mnp, = args
-    cmd = 'python -m JamesLab.CNN.CNN_LeafCount %s %s %s %s'%(train_dir, mnp, opts.epc, opts.tensorboard)
-    SlurmHeader = Slurm_gpu_header%(opts.time, opts.memory, opts.prefix, opts.prefix,opts.prefix,opts.gpu)
+    train_dir, label_fn, model_name, = args
+    cmd = 'python -m JamesLab.CNN.CNN_LeafCount %s %s %s %s %s'%(train_dir, label_fn, model_name, opts.epc, opts.tensorboard)
+    SlurmHeader = Slurm_gpu_header%(opts.time, opts.memory, opts.prefix, opts.prefix, opts.prefix)
     SlurmHeader += 'module load anaconda\n'
     SlurmHeader += 'source activate MCY\n'
     SlurmHeader += cmd
-    f = open('%s.dpp.slurm'%mnp, 'w')
+    f = open('%s.dpp.slurm'%model_name, 'w')
     f.write(SlurmHeader)
     f.close()
-    print('slurm file %s.dpp.slurm has been created, now you can sbatch your job file.'%mnp)
+    print('slurm file %s.dpp.slurm has been created, now you can sbatch your job file.'%model_name)
 
 
 def vgg(args):

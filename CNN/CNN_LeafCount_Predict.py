@@ -43,18 +43,21 @@ class CornLeafRegressor(object):
     def shut_down(self):
         self.model.shut_down()
 
-def predict(model_dir, test_dir):
-    dir = os.path.join(test_dir)
-    images = [os.path.join(dir, name) for name in os.listdir(dir) if
-          os.path.isfile(os.path.join(dir, name)) & name.endswith('.seg.crp.png')]
+def predict(model_dir, test_dir, output_fn):
+    testdir = os.path.join(test_dir)
+    images = [os.path.join(testdir, name) for name in os.listdir(testdir) if
+          os.path.isfile(os.path.join(testdir, name)) & name.endswith('.png')]
     net = CornLeafRegressor(model_dir)
     leaf_counts = net.forward_pass(images)
     net.shut_down()
+
+    f1 = open('%s'%output_fn, 'w')
     for k,v in zip(images, leaf_counts):
-        print ('%s: %d' % (k, v))
+        f1.write('%s,%d\n'%(k.split('/')[-1], v))
+    f1.close()
 
 import sys
-if len(sys.argv)==3:
+if len(sys.argv)==4:
     predict(*sys.argv[1:])
 else:
-    print('model_dir, testing_dir')
+    print('model_dir, testing_dir, output_fn')

@@ -31,7 +31,7 @@ def request_cpu(args):
         print('add --help to see options.\n')
         cmd = 'srun --partition=%s --mem-per-cpu=%s --ntasks-per-node=6 --nodes=1 --time=%s:0:0 --pty $SHELL\n'%(opts.partition, opts.memory, opts.time)
         print(cmd)
-        call(cmd, shell=True)
+        #call(cmd, shell=True)
     else:
         sys.exit(not p.print_help())
 
@@ -41,18 +41,18 @@ def request_gpu(args):
     request a gpu node from hcc.
     """
     p = OptionParser(request_gpu.__doc__)
-    p.add_option("--memory", default="15000",
+    p.add_option("--memory", default="12000",
                 help="specify the how much memory [default: %default]")
     p.add_option("--time", default='20',
                 help = "specify the time (hour) [default: %default]")
-    p.add_option("--model", default='gpu_p100', choices=('gpu_p100', 'gpu_k20', 'gpu_k40'),
+    p.add_option("--model", default='gpu_k40', choices=('gpu_p100', 'gpu_k20', 'gpu_k40'),
                 help = "specify gpu mode, p100:16gb, k40:12gb, k20:5bg [default: %default]")
     opts, args = p.parse_args(args)
     if len(args) == 0:
         print('add --help to see options.\n')
-        cmd = 'srun --partition=gpu --gres=gpu --constraint=%s --mem-per-cpu=%s --ntasks-per-node=1 --nodes=1 --time=%s:0:0 --pty $SHELL\n'%(opts.model, opts.memory, opts.time)
+        cmd = 'srun --partition=schnablelab --gres=gpu --constraint=%s --mem-per-cpu=%s --ntasks-per-node=1 --nodes=1 --time=%s:0:0 --pty $SHELL\n'%(opts.model, opts.memory, opts.time)
         print(cmd)
-        call(cmd, shell=True)
+        #call(cmd, shell=True)
     else:
         sys.exit(not p.print_help())
 

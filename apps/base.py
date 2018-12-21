@@ -130,16 +130,16 @@ class OptionParser(OptionP):
         group.add_option('-t', dest='time', default=1,
                          help='specify time(hour) for slurm header')
         group.add_option('-m', dest='memory', default=10000,
-                         help='memory(Mb) for slurm header')
+                         help='memory(Mb) for slurm header. schnablelab gpu is k40(12000)')
         if jn:
             group.add_option('-p', dest='prefix', default='myjob',
                              help='prefix of job name and log file')
         if env:
-            group.add_option('-e', dest='env',
+            group.add_option('-e', dest='env', choices=['Py3KerasTensorCPU', 'MCY'], 
                              help='the conda enviroment you need to activate')
         if gpu:
-            group.add_option('-g', dest='gpu', default='p100', choices=('p100', 'k20', 'k40'),
-                             help='specify the gpu type if you want to submit to a gpu node')
+            group.add_option('-g', dest='gpu',
+                             help='specify the gpu model(k20,k40,p100). Leave empty for unconstraint.')
         self.add_option_group(group)
 
 
@@ -215,12 +215,13 @@ def iglob(pathname, patterns):
 def cutlist(lst, n):
     """
     cut list to different groupts with equal size
-    yield group name and group
+    yield index range for each group and the group itself
     """
     series = pd.Series(lst)
     ctg = pd.qcut(series.index, n)
     grps = series.groupby(ctg)
     for name, group in grps:
-        st = int(name.left + 1)
-        ed = int(name.right)
+        idx = group.index.tolist()
+        st = idx[0]
+        ed = idx[-1]
         yield '%s-%s' % (st, ed), group

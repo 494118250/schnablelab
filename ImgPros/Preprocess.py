@@ -108,13 +108,12 @@ def PlantHullBatch(args):
         outpre = str(imgpath.stem)
         cmd = 'python -m JamesLab.ImgPros.Preprocess PlantHull %s --crop True --segmentation True --border 80,10,10,10\n' % (img) \
             if opts.mode=='real' \
-            else 'python -m JamesLab.ImgPros.Preprocess PlantHull %s --crop True --segmentation True --border 0,40,10,0 --thresh_cutoff 180\n' % (img)
+            else 'python -m JamesLab.ImgPros.Preprocess PlantHull %s --border 0,40,10,0 --thresh_cutoff 160\n' % (img)
         print(cmd)
         all_cmds.append(cmd)
-'''
     grps = cutlist(all_cmds, int(jobn))
     for gn, grp in grps:
-        header = Slurm_header % (opts.time, opts.memory, outpre, outpre, outpre)
+        header = Slurm_header % (opts.time, opts.memory, gn, gn, gn)
         header += "ml anaconda\nsource activate MCY\n"
         for cmd in grp:
             header += cmd
@@ -123,7 +122,6 @@ def PlantHullBatch(args):
         jobfile.write(header)
         jobfile.close()
         print('%s job file generated!' % jobname)
-'''
 
 def crop(args):
     """

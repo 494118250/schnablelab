@@ -9,6 +9,19 @@ Slurm_header = '''#!/bin/sh
 #SBATCH --job-name=%s
 #SBATCH --error=./%s.err
 #SBATCH --output=./%s.out
+#SBATCH --qos=ac_schnablelab
+'''
+
+Slurm_gpu_constraint_header = '''#!/bin/sh
+#SBATCH --time=%s:00:00          # Run time in hh:mm:ss
+#SBATCH --mem-per-cpu=%s      # Maximum memory required per CPU (in megabytes)
+#SBATCH --job-name=%s
+#SBATCH --error=./%s.err
+#SBATCH --output=./%s.out
+#SBATCH --partition=schnablelab
+#SBATCH --nodes=1
+#SBATCH --gres=gpu:1
+#SBATCH --constraint=gpu_%s
 
 '''
 
@@ -18,10 +31,9 @@ Slurm_gpu_header = '''#!/bin/sh
 #SBATCH --job-name=%s
 #SBATCH --error=./%s.err
 #SBATCH --output=./%s.out
-#SBATCH --partition=gpu
+#SBATCH --partition=schnablelab
 #SBATCH --nodes=1
 #SBATCH --gres=gpu:1
-#SBATCH --constraint=gpu_%s
 
 '''
 

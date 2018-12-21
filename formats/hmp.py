@@ -18,6 +18,7 @@ class hmp:
     def to_vcf(self):
         # return the tassel comand for the conversion
         cmd = '{tassel} -Xms512m -Xmx10G -fork1 -h {hmp} -export -exportType VCF\n'.format(self.tassel, self.fn)
+        return cmd
 
     def to_mean_annot(self):
         # convert hmp format to bimbam format composed of a mean and an annotation file.
@@ -39,10 +40,28 @@ class hmp:
             chrom, pos = j[2], j[3]
             wf2.write('{rs},{pos},{chromosome}\n'.format(rs, pos, chrom))
 
-    def to_numeric(self, kind='column'):
+    def to_numeric_col(self):
         self.GD = self.prefix + '.GD'
         self.GM = self.prefix + '.GM'
         with open(self.fn) as rf, open(self.GD, 'w') as wf1, open(self.GM, 'w') as wf2:
-        if kind = 'column':
 
-        if kind = 'row':
+    def to_numeric_row(self, kind='row'):
+        self.GD = self.prefix + '.GD'
+        self.GM = self.prefix + '.GM'
+        with open(self.fn) as rf, open(self.GD, 'w') as wf1, open(self.GM, 'w') as wf2:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

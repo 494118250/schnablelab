@@ -10,7 +10,13 @@ import os
 import sys
 
 
-def train(train_dir,  model_name, epoch, tsrbrd_dir):
+def train(train_dir, label_fn, model_name, epoch, tsrbrd_dir):
+    """
+    train_dir: the directory where your training images located
+    label_fn: the file name of labels under train_dir. Just specify the file name don't inclde the path. 
+    model_name: the name of you model. Model results will be save to the dir in this name
+    epoch: specify the epoch. Based on dpp document suggest 100 for plant stress and 500 for counting.
+    """
     try:
         os.mkdir(model_name)
     except:
@@ -18,12 +24,13 @@ def train(train_dir,  model_name, epoch, tsrbrd_dir):
     img_dir = Path(train_dir)
     model = dpp.DPPModel(debug=True, save_checkpoints=True, report_rate=150, tensorboard_dir=tsrbrd_dir, save_dir=model_name)
     model.set_batch_size(30)
-    model.set_number_of_threads(90)
+    model.set_number_of_threads(10)
     model.set_image_dimensions(256, 256, 3)
     model.set_resize_images(True)
     model.set_problem_type('regression')
     model.set_num_regression_outputs(1)
-    model.set_train_test_split(0.8)
+    model.set_test_split(0.1)
+    model.set_validation_split(0.1)
     model.set_learning_rate(0.0001)
     model.set_weight_initializer('xavier')
     #model.set_maximum_training_epochs(1)
@@ -35,9 +42,8 @@ def train(train_dir,  model_name, epoch, tsrbrd_dir):
     model.set_augmentation_flip_vertical(True)
     model.set_augmentation_crop(True)
     
-    # Load all data for IPPN leaf counting dataset
-# ALTERNATIVELY - Load labels and images
-    model.load_multiple_labels_from_csv(img_dir / 'my_labels.csv', id_column=0)
+    # ALTERNATIVELY - Load labels and images
+    model.load_multiple_labels_from_csv(img_dir/label_fn, id_column=0)
     model.load_images_with_ids_from_directory(img_dir)
 
 
@@ -57,7 +63,7 @@ def train(train_dir,  model_name, epoch, tsrbrd_dir):
     # Begin training the regression model
     model.begin_training()
 
-if len(sys.argv)==5:
+if len(sys.argv)==6:
     train(*sys.argv[1:])
 else:
-    print('train_dir', 'model_name', 'epoches', "tensorboard_dir")
+    print('train_dir', 'label_fn', 'model_name', 'epoches', "tensorboard_dir")
