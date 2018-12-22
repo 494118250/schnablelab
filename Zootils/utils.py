@@ -12,20 +12,15 @@ try:
     from panoptes_client import Panoptes, Project
     from panoptes_client.panoptes import PanoptesAPIException
 except ImportError:
-    print("panoptes_client package could not be imported. To install use:")
-    print("> pip install panoptes-client")
-    print("Or activate your panoptes-client enabled environment")
+    print("Error: 'panoptes_client' package could not be imported.")
+    print(" To install use: 'pip install panoptes-client'")
+    print(" Or activate your panoptes-client enabled environment")
     exit(False)
 
-
-def get_logger():
-    log = logging.getLogger('zootils')
-    log.setLevel(logging.DEBUG)
-    log.addHandler(logging.FileHandler('zootils.err'))
-    log.addHandler(logging.StreamHandler())
-
-
-log = get_logger()
+log = logging.getLogger(__name__)
+#log.setLevel(logging.DEBUG)
+#log.addHandler(logging.FileHandler(__name__ + '.log'))
+#log.addHandler(logging.StreamHandler())
 
 
 def convert(imgdir, ext=None):

@@ -6,7 +6,7 @@ from datetime import datetime as dt
 import csv
 import logging
 import re
-from JamesLab.Zookeeper import utils
+from JamesLab.Zootils import utils
 try:
     from panoptes_client import Panoptes, Project
     from panoptes_client.panoptes import PanoptesAPIException
@@ -17,10 +17,10 @@ except ImportError:
     exit(False)
 
 
-log = utils.get_logger()
+log = logging.getLogger(__name__)
 
 
-def export(args, opts):
+def export(projid, outfile, opts):
     '''
     %prog export project_id output_dir
 
@@ -38,26 +38,13 @@ def export(args, opts):
         None
     '''
 
-    proj_id, output_dir = args
-
-    if not osp.isdir(output_dir):
-        log.error("Output directory does not exist")
-        return False
-
-    project = utils.connect(proj_id)
+    project = utils.connect(projid)
 
     try:
         log.info("Getting export, this may take a lot of time.")
         export = project.get_export(opts.type)
-        count = 0
-        while (osp.isfile("export_{}.zoo.csv".format(count))):
-            count += 1
-        with open(
-                  osp.join(output_dir,
-                           "export_{}.zoo.csv".format(count)
-                           ),
-                  'w') as zoof:
-            zoof.write(export)
+        with open(outfile, 'w') as zoof:
+            zoof.write(export.text)
     except PanoptesAPIException as e:
         log.error("Error getting export")
         for arg in e.args:

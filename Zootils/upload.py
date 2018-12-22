@@ -2,7 +2,7 @@ import os.path as osp
 from datetime import datetime as dt
 import csv
 import logging
-from JamesLab.Zootils import utils
+from JamesLab.Zootils import utils, manifest
 try:
     from panoptes_client import (
                                  SubjectSet,
@@ -17,7 +17,7 @@ except ImportError:
     exit(False)
 
 
-log = utils.get_logger()
+log = logging.getLogger(__name__)
 
 
 def upload(imgdir, projid, opts, **kwargs):
@@ -92,9 +92,9 @@ def upload(imgdir, projid, opts, **kwargs):
     if not osp.isfile(osp.join(imgdir, 'manifest.csv')):
         log.info("Generating manifest")
         if opts.convert:
-            utils.manifest(imgdir, ext='jpg')
+            manifest(imgdir, ext='jpg')
         else:
-            utils.manifest(imgdir)
+            manifest(imgdir)
 
     mfile = open(osp.join(imgdir, 'manifest.csv'), 'r')
     fieldnames = mfile.readline().strip().split(",")

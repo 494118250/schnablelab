@@ -6,7 +6,6 @@ Calls Zookeeper class
 from JamesLab.apps.base import ActionDispatcher, OptionParser
 import sys
 
-
 def main():
     actions = (
         ('upload', 'load images to zooniverse'),
@@ -19,25 +18,20 @@ def main():
 
 def upload(args):
     '''
-    %prog upload proj_id img_dir
-    Does:
-        - Uploads images from the specified image directory to zooniverse
-          project specified by project id.
-        - Will also generate a manifest if one is not already present inside
-          img_dir.
-    Note:
-        - Custom manifest must be named manifest.csv and have a filename column
-    Args:
-        - proj_id
-            -type: str
-            -desc: The zooniverse project id to upload the images to.
-        - img_dir
-            -type: str
-            -desc: The directory of the images to be uploaded
-    Returns:
-        None
+    %prog upload projec_id image_dir
+
+    Uploads images from the image directory to zooniverse
+    project. If there is no manifest will generate one.
+
+    - proj_id
+        type: str
+        desc: The zooniverse project id to upload the images to.
+    - img_dir
+        type: str
+        desc: The directory of the images to be uploaded
     '''
-    from JamesLab.Zookeeper.Zootils import upload
+
+    from JamesLab.Zootils.upload import upload as load
 
     p = OptionParser(upload.__doc__)
     p.add_option('-s', '--subject', default=False,
@@ -46,7 +40,6 @@ def upload(args):
                  help='Silences output when uploading images to zooniverse.')
     p.add_option('-w', '--workflow', default=None,
                  help='Designate a workflow id to link this subject set.')
-    # TODO: ??
     p.add_option('-c', '--convert', default=False,
                  help="Compress and convert files to jpg for faster load times"
                  + " on zooniverse.\n"
@@ -61,7 +54,7 @@ def upload(args):
 
     imgdir, projid = args
 
-    upload(imgdir, projid, opts)
+    load(imgdir, projid, opts)
 
     return True
 
@@ -69,19 +62,17 @@ def upload(args):
 def export(args):
     '''
     %prog export proj_id outfile
-    Does:
-        - Fetches an export from the specified zooniverse project id.
-    Args:
-        - proj_id
-            - type: string
-            - desc: The project id of the zooniverse project
-    Returns:
-        None
+
+    Fetches an export from the specified zooniverse project id.
+
+    - proj_id
+        type: str
+        desc: The project id of the zooniverse project
     '''
 
-    from JamesLab.Zookeeper.Zootils import export
+    from JamesLab.Zootils.export import export as exp
 
-    p = OptionParser(upload.__doc__)
+    p = OptionParser(export.__doc__)
     p.add_option('-t', '--type', default='classifications',
                  help='Specify the type of export')
 
@@ -92,7 +83,7 @@ def export(args):
 
     projid, outfile = args
 
-    export(projid, outfile)
+    exp(projid, outfile, opts)
 
     return True
 
@@ -100,16 +91,14 @@ def export(args):
 def manifest(args):
     '''
     %prog manifest image_dir
-    Does:
-        Generates a manifest inside the specified image directory.
-    Args:
-        - img_dir
-            -type: str
-            -desc: The image directory in which to generate the manifest.
-    Returns:
-        None
+
+    Generates a manifest inside the specified image directory.
+
+    - img_dir
+        -type: str
+        -desc: The image directory in which to generate the manifest.
     '''
-    from JamesLab.Zookeeper.Zootils import manifest
+    from JamesLab.Zootils.manifest import manifest as mani
 
     p = OptionParser(manifest.__doc__)
     opts, args = p.parse_args(args)
@@ -119,7 +108,7 @@ def manifest(args):
 
     imgdir = args[1]
 
-    manifest(imgdir)
+    mani(imgdir)
 
     return True
 

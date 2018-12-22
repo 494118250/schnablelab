@@ -1,12 +1,13 @@
-from JamesLab.Zookeeper import utils
 import os.path as osp
 import os
 from datetime import datetime as dt
 import csv
 import re
+import logging
+from JamesLab.Zootils import utils
 
 
-log = utils.get_logger()
+log = logging.getLogger(__name__)
 
 
 def manifest(imgdir, ext=None):
@@ -32,8 +33,8 @@ def manifest(imgdir, ext=None):
                   .format(imgdir))
 
     log.info("Manifest being generated with fields: [ id, filename ]")
-    mfile = open(osp.join(imgdir, 'manifest.csv'), 'r')
-    writer = csv.writer(mfile)
+    mfile = open(osp.join(imgdir, 'manifest.csv'), 'w')
+    writer = csv.writer(mfile, lineterminator='\n')
     writer.writerow(["id", "filename"])
 
     idtag = dt.now().strftime("%m%d%y-%H%M%S")
@@ -61,8 +62,11 @@ def manifest(imgdir, ext=None):
                 break
             img_c += 1
 
-    log.info("DONE: {} subjects written to manifest"
-             .format(img_c))
+    if img_c == 0:
+        log.warning("No images found in imgdir")
+    else:
+        log.info("DONE: {} subjects written to manifest"
+                 .format(img_c))
 
     mfile.close()
     return True
