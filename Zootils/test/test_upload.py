@@ -19,7 +19,14 @@ class opts:
 
 def test_upload():
 
+    # TEST 1
     projid = 8103
     imgdir = 'img'
-
     opts = opts()
+
+    osp.remove(osp.join('img', 'manifest.csv'))
+    upload(imgdir, projid, opts)
+    assert osp.exists(osp.join('img', 'manifest.csv'))
+
+    # TEST 2
+    
