@@ -21,7 +21,9 @@ def test_export():
     if osp.exists('export.csv'):
         os.remove('export.csv')
 
-    with patch('builtins.input', side_effect=user_creds):
-        export(7802, 'export.csv', opts)
+    @patch('getpass.getpass')
+    @patch('builtins.input')
+    export(7802, 'export.csv', opts)
 
     assert osp.exists('export.csv')
+    osp.remove('export.csv')

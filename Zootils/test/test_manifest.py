@@ -11,32 +11,27 @@ from glob import glob
 
 def test_manifest():
 
-    manifest('img')
+    imgdir = osp.join(osp.getcwd(), 'img')
 
+    manifest(imgdir)
     mani_path = osp.join('img', 'manifest.csv')
     assert osp.exists(mani_path)
-
     with open(mani_path, 'r') as manf:
         lines = manf.readlines()
+    assert len(lines) == (len(glob(osp.join(imgdir, '*.png'))) + len(glob(osp.join(imgdir, '*.jpg')))) + 1
 
-    assert len(lines) == ( len(glob('img/*.png')) + len(glob('img/*.jpg')) ) + 1
-
-    manifest('img', ext='png')
-
+    manifest(imgdir, ext='png')
     mani_path = osp.join('img', 'manifest.csv')
     assert osp.exists(mani_path)
-
     with open(mani_path, 'r') as manf:
         lines = manf.readlines()
+    assert len(lines) == len(glob(osp.join(imgdir, '*.png'))) + 1
 
-    assert len(lines) == len(glob('img/*.png')) + 1
-
-    manifest('img', ext='jpg')
-
+    manifest(imgdir, ext='jpg')
     mani_path = osp.join('img', 'manifest.csv')
     assert osp.exists(mani_path)
-
     with open(mani_path, 'r') as manf:
         lines = manf.readlines()
+    assert len(lines) == len(glob(osp.join(imgdir, '*.jpg'))) + 1
 
-    assert len(lines) == len(glob('img/*.jpg')) + 1
+    os.remove(osp.join(imgdir, 'manifest.csv'))

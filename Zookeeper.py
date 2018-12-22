@@ -18,20 +18,17 @@ def main():
 
 def upload(args):
     '''
-    %prog upload projec_id image_dir
+    %prog upload imgdir projid
 
-    Uploads images from the image directory to zooniverse
-    project. If there is no manifest will generate one.
+    - imgdir: Path to directory of the images to be uploaded
+    - projid: Zooniverse project id (4 - 5 digit number)
 
-    - proj_id
-        type: str
-        desc: The zooniverse project id to upload the images to.
-    - img_dir
-        type: str
-        desc: The directory of the images to be uploaded
+    DESC:
+        Uploads images from the image directory to zooniverse
+        project. If there is no manifest will generate one.
     '''
 
-    from JamesLab.Zootils.upload import upload as load
+    from JamesLab.Zootils import upload as load
 
     p = OptionParser(upload.__doc__)
     p.add_option('-s', '--subject', default=False,
@@ -63,14 +60,12 @@ def export(args):
     '''
     %prog export proj_id outfile
 
-    Fetches an export from the specified zooniverse project id.
+    - proj_id: The project id of the zooniverse project
 
-    - proj_id
-        type: str
-        desc: The project id of the zooniverse project
+    DESC: Fetches an export from the specified zooniverse project id.
     '''
 
-    from JamesLab.Zootils.export import export as exp
+    from JamesLab.Zootils import export as exp
 
     p = OptionParser(export.__doc__)
     p.add_option('-t', '--type', default='classifications',
@@ -92,13 +87,11 @@ def manifest(args):
     '''
     %prog manifest image_dir
 
-    Generates a manifest inside the specified image directory.
+    - img_dir: The image directory in which to generate the manifest.
 
-    - img_dir
-        -type: str
-        -desc: The image directory in which to generate the manifest.
+    DESC: Generates a manifest inside the specified image directory.
     '''
-    from JamesLab.Zootils.manifest import manifest as mani
+    from JamesLab.Zootils import manifest as mani
 
     p = OptionParser(manifest.__doc__)
     opts, args = p.parse_args(args)
