@@ -28,7 +28,7 @@ def upload(args):
         project. If there is no manifest will generate one.
     '''
 
-    from JamesLab.Zookeeper.Zootils import upload as load
+    from JamesLab.Zooniverse.Zootils import upload as load
 
     p = OptionParser(upload.__doc__)
     p.add_option('-s', '--subject', default=False,
@@ -65,7 +65,7 @@ def export(args):
     DESC: Fetches an export from the specified zooniverse project id.
     '''
 
-    from JamesLab.Zookeeper.Zootils import export as exp
+    from JamesLab.Zooniverse.Zootils import export as exp
 
     p = OptionParser(export.__doc__)
     p.add_option('-t', '--type', default='classifications',
@@ -91,7 +91,7 @@ def manifest(args):
 
     DESC: Generates a manifest inside the specified image directory.
     '''
-    from JamesLab.Zookeeper.Zootils import manifest as mani
+    from JamesLab.Zooniverse.Zootils import manifest as mani
 
     p = OptionParser(manifest.__doc__)
     opts, args = p.parse_args(args)
