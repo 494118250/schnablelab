@@ -33,15 +33,15 @@ def upload(args):
     p = OptionParser(upload.__doc__)
     p.add_option('-s', '--subject', default=False,
                  help='Designate a subject set id.')
-    p.add_option('-q', '--quiet', default=False,
+    p.add_option('-q', '--quiet', action='store_true', default=False,
                  help='Silences output when uploading images to zooniverse.')
-    p.add_option('-w', '--workflow', default=None,
-                 help='Designate a workflow id to link this subject set.')
-    p.add_option('-c', '--convert', default=False,
+    '''
+    p.add_option('-c', '--convert', action='store_true', default=False,
                  help="Compress and convert files to jpg for faster load times"
                  + " on zooniverse.\n"
                  + " Command: magick -strip -interlace Plane -quality 85%"
                  + " -format jpg <img_directory>/<filename>.png")
+    '''
 
     opts, args = p.parse_args(args)
 

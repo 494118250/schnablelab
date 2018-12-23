@@ -6,6 +6,8 @@ from datetime import datetime as dt
 import csv
 import logging
 import re
+from subprocess import run, CalledProcessError
+from pprint import pprint
 try:
     import panoptes_client as pan
     from panoptes_client.panoptes import PanoptesAPIException
@@ -19,8 +21,8 @@ except ImportError:
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 log.addHandler(logging.FileHandler(__name__ + '.log'))
+log.info('### EXECUTION DATE TIME: ' + dt.now().isoformat() + ' ###')
 log.addHandler(logging.StreamHandler())
-
 
 def upload(imgdir, projid, opts, **kwargs):
     '''
@@ -44,7 +46,7 @@ def upload(imgdir, projid, opts, **kwargs):
     '''
 
     if opts.quiet:
-        log.setLevel(logging.DEBUG)
+        log.setLevel(logging.INFO)
 
     if not osp.isdir(imgdir):
         log.error("Image directory '{}' does not exist".format(imgdir))
@@ -73,7 +75,6 @@ def upload(imgdir, projid, opts, **kwargs):
             try:
                 subject_set.display_name = name
                 subject_set.save()
-
             except PanoptesAPIException as e:
                 log.error("Could not set subject set display name")
                 for arg in e.args:
@@ -81,16 +82,28 @@ def upload(imgdir, projid, opts, **kwargs):
                         log.error("User credentials invalid")
                         exit(False)
                     log.error("> " + arg)
+                    if arg == 'Validation failed:' \
+                              + ' Display name has already been taken':
+                        log.info("To use {} as the display name,"
+                                 + " get the subject set id from zooniverse"
+                                 + " and call this command with --subject <id>")
+                        if not utils.get_yn('Try again?'):
+                            exit(False)
                 continue
 
             break
 
+    # NOTE: This would need to be cross-platform and efficient
+    #       I am removing this feature and leaving file compression to
+    #       the user.
+    '''
     if opts.convert:
         log.info("Compressing and converting to jpg")
         log.critical("Warning: All jpg files will be overwritten.")
 
         if utils.get_yn("Continue?"):
             utils.convert(imgdir)
+    '''
 
     if not osp.isfile(osp.join(imgdir, 'manifest.csv')):
         log.info("Generating manifest")
@@ -108,7 +121,7 @@ def upload(imgdir, projid, opts, **kwargs):
         log.error("Manifest file must have a 'filename' column")
         return False
 
-    log.info("Loading images fom manifest...")
+    log.info("Loading images from manifest...")
     error_count = 0
     success_count = 0
     project.reload()
@@ -129,7 +142,7 @@ def upload(imgdir, projid, opts, **kwargs):
             continue
 
         success_count += 1
-        log.info("{}- {} - success."
+        log.debug("{}- {} - success"
                 .format(success_count,
                         str(osp.basename(row['filename']))))
 
@@ -138,10 +151,7 @@ def upload(imgdir, projid, opts, **kwargs):
     log.info("{} of {} images loaded".format(success_count,
                                              success_count + error_count))
 
-    if opts.workflow:
-        pan.workflow.Workflow().find(opts.workflow)
-    else:
-        log.info("Remember to link your workflow to this subject set")
+    log.info("Remember to link your workflow to this subject set")
 
     return True
 
@@ -175,9 +185,7 @@ def manifest(imgdir, ext=None):
 
     idtag = dt.now().strftime("%m%d%y-%H%M%S")
 
-    if not ext:
-        PATTERN = re.compile(r".*\.(jpg|png|tiff)")
-    elif ext == 'jpg':
+    if not ext or ext == 'jpg':
         PATTERN = re.compile(r".*\.jpg")
     elif ext == 'png':
         PATTERN = re.compile(r".*\.png")
@@ -254,7 +262,7 @@ class utils:
                 cmd.append([osp.join(imgdir, "*.jpg"),
                             osp.join(imgdir, "*.png"),
                             osp.join(imgdir, "*.tiff")])
-            proc_ret = run(cmd, capture_output=True)
+            proc_ret = run(cmd, shell=bash)
         except CalledProcessError as e:
             log.error("Failed to compress images")
             pprint(e)
@@ -286,7 +294,7 @@ class utils:
 
     def get_yn(message):
         while True:
-            val = input(message + " [y/n]")
+            val = input(message + " [y/n] ")
             if val.lower() in ['y', 'n']:
                 return True if val.lower() == 'y' else False
             else:
