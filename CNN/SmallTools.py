@@ -19,9 +19,63 @@ def main():
         ('genlabel', 'genearte label for training image files'),
         ('extract_info', 'extract testing and prediction results from dpp log file'),
         ('statistics', 'calculate CountDiff, AbsCountDiff, MSE, Agreement, r2, p_value, and draw scatter, bar plots'),
+        ('subsampling', 'create balanced training dataset for each class'),
             )
     p = ActionDispatcher(actions)
     p.dispatch(globals())
+
+
+def subsampling(args):
+    """
+    %prog source_imgs_dir source_imgs_csv cls_range(eg: 5-10) imgs_per_cls output_dir
+
+    create the balanced training dataset where each class has the same number of images
+    """
+    p = OptionParser(statistics.__doc__)
+    p.add_option('--header', default=None,
+        help = 'spefiy if the source csv file has header')
+    p.add_option('--comma_sep', default=True,
+        help = 'spefiy if the csv file is separated by comma')
+    p.add_option('--groupby_col', default=1,
+        help = 'spefiy the groupy column. 0: 1st column; 1: 2nd column')
+    opts, args = p.parse_args(args)
+    if len(args) == 0:
+        sys.exit(not p.print_help())
+    source_dir, source_csv, cls_range, ipc, train_dir = args # ipc: number of images per class. 
+    
+    # read the source csv file
+    if opts.header and opts.comma_sep: # without header with ,
+        df0 = pd.read_csv(source_csv, header=None)
+    elif (not opts.header) and opts.comma_sep: # with header with ,
+        df0 = pd.read_csv(source_csv)
+    elif not (opts.header and opts.comma_sep): # with header with tab/space
+        df0 = pd.read_csv(source_csv, delim_whitespace=True)
+    else:
+        print('keke... implement this option first!')
+    print('shape of source csv %s: %s'%(mycsv, df0.shape))
+
+    # choose df in the class range
+    gc = int(opts.groupby_col)
+    fn = 0 if gc==1 else 1 # file name column
+    st, ed = [int(n) for n in cls_range.split('-')]
+    df1 = df0[df0.iloc[:, gc].isin(range(st,ed+1))]
+
+    summ = df1.iloc[:, gc].value_counts().sort_index()
+    print('image distribution in each class:\n', summ)
+    
+    # pick up the data and move to the specified training dir
+    ipc = int(ipc)
+    sr_dir = Path(source_dir)
+    tr_dir = Path(train_dir)
+    for lc, grp in df1.groupby(df1.columns[gc]):
+        print('group index: %s'%lc)
+        grpsub = grp.sample(ipc)
+        print(grpsub.shape)
+        for fn in grpsub.iloc[:,fc]:
+            copy(sr_dir/fn, train_dir)
+    print('Done!')    
+    
+    
 
 def genlabel(args):
     """
@@ -30,6 +84,12 @@ def genlabel(args):
     generate my_labels.csv in the training dir
     """
     p = OptionParser(genlabel.__doc__)
+    p.add_option('--header', default=False,
+        help = 'if add the header to csv or not!')
+    p.add_option('--source_dir', default='/work/schnablelab/cmiao/LeafCounts_JinliangData/Raw_RealImages',
+        help = 'spefiy the source dir')
+    p.add_option('--source_csv', default='labels_4633.csv',
+        help = 'spefiy the csv file in source dir')
     opts, args = p.parse_args(args)
     if len(args) == 0:
         sys.exit(not p.print_help())
@@ -40,8 +100,8 @@ def genlabel(args):
     total_n = train_df.shape[0]
     print('total %s images.'%total_n)
 
-    all_real_dir = Path('/work/schnablelab/cmiao/LeafCounts_JinliangData/Raw_RealImages')
-    all_real_df = pd.read_csv(all_real_dir/'labels_4633.csv').set_index('sm')
+    all_real_dir = Path(opts.source_dir)
+    all_real_df = pd.read_csv(all_real_dir/opts.source_csv).set_index('sm')
 
     train_df['real'] = train_df['fn'].isin(all_real_df.index)
 
@@ -60,8 +120,10 @@ def genlabel(args):
         fake_df = train_df[train_df['real'].isin([False])]
         fake_labels = fake_df['fn'].apply(lambda x: int(x.split('_')[0])).values
         train_df.loc[train_df['real'].isin([False]), 'real']=fake_labels
-
-    train_df[['fn', 'real']].to_csv(train_path/label_fn, index=False, header=False)
+    if opts.header:
+        train_df[['fn', 'real']].to_csv(train_path/label_fn, index=False)
+    else:
+        train_df[['fn', 'real']].to_csv(train_path/label_fn, index=False, header=False)
     print('Done, check %s'%label_fn)
 
 def convert2list(lines):

@@ -30,7 +30,7 @@ def train(train_dir, label_fn, model_name, epoch, tsrbrd_dir):
     model.set_problem_type('regression')
     model.set_num_regression_outputs(1)
     model.set_test_split(0.1)
-    model.set_validation_split(0.1)
+    model.set_validation_split(0)
     model.set_learning_rate(0.0001)
     model.set_weight_initializer('xavier')
     #model.set_maximum_training_epochs(1)

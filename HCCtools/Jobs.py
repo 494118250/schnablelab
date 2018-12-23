@@ -33,7 +33,7 @@ def submit(args):
     p = OptionParser(submit.__doc__)
     p.add_option("--pattern", default="*.slurm", 
                  help="specify the patter of your slurm job, remember to add quotes [default: %default]")
-    p.add_option("--partition", default='jclarke', choices=('batch', 'jclarke', 'schnablelab'),
+    p.add_option("--partition", default='jclarke', choices=('batch', 'jclarke', 'gpu', 'schnablelab'),
                 help = "choose which partition you are going to submit [default: %default]")
     p.add_option("--range", default='all', 
                  help="how many jobs you gonna submit this time. exp: '1-10', '11-20', 'all'. 1-based coordinate")
