@@ -185,7 +185,9 @@ def manifest(imgdir, ext=None):
 
     idtag = dt.now().strftime("%m%d%y-%H%M%S")
 
-    if not ext or ext == 'jpg':
+    if not ext:
+        PATTERN = re.compile(r".*\.(jpg|png|tiff)")
+    elif ext == 'jpg':
         PATTERN = re.compile(r".*\.jpg")
     elif ext == 'png':
         PATTERN = re.compile(r".*\.png")
