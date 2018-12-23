@@ -128,6 +128,13 @@ def upload(imgdir, projid, opts, **kwargs):
 
     for row in reader:
         try:
+
+            # Check file size
+            filesize = osp.getsize(row['filename'])
+            if filesize > 256000:
+                log.warning("File size of {}K is larger than recommended 256K"
+                         .format(filesize))
+
             temp_subj = pan.Subject()
             temp_subj.add_location(row['filename'])
             temp_subj.metadata.update(row)
