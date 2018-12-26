@@ -1,6 +1,6 @@
 '''
-JamesLab CLI tool
-Calls Zookeeper class
+JamesLab zooniverse management CLI tool
+Calls Zootils
 '''
 
 from JamesLab.apps.base import ActionDispatcher, OptionParser
