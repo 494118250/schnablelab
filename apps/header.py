@@ -31,7 +31,6 @@ Slurm_gpu_header = '''#!/bin/sh
 #SBATCH --job-name=%s
 #SBATCH --error=./%s.err
 #SBATCH --output=./%s.out
-#SBATCH --partition=schnablelab
 #SBATCH --nodes=1
 #SBATCH --gres=gpu:1
 

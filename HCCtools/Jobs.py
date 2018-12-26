@@ -42,7 +42,8 @@ def submit(args):
         sys.exit(not p.print_help())
 
     folder, = args
-    partition = '' if opts.partition=='batch' else '-p %s'%opts.partition
+    #partition = '' if opts.partition=='batch' else '-p %s'%opts.partition
+    partition = '-p %s'%opts.partition
     alljobs = ['sbatch %s %s'%(partition, i) for i in glob(folder, opts.pattern)]
     print("Total %s jobs under '%s'"%(len(alljobs), folder))
 
