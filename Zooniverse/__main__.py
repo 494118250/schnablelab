@@ -1,7 +1,4 @@
 # -*- coding: UTF-8 -*-
-"""
-Build CNN, etc.
-"""
 
 from JamesLab.apps.base import dmain
 

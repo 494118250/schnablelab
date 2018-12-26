@@ -51,9 +51,10 @@ def upload(args):
 
     imgdir, projid = args
 
-    load(imgdir, projid, opts)
-
-    return True
+    if load(imgdir, projid, opts):
+        return True
+    else:
+        log.error("Could not upload images")
 
 
 def export(args):
@@ -78,9 +79,11 @@ def export(args):
 
     projid, outfile = args
 
-    exp(projid, outfile, opts)
-
-    return True
+    if exp(projid, outfile, opts):
+        return True
+    else:
+        log.info("Could not get export")
+        return False
 
 
 def manifest(args):
@@ -101,9 +104,11 @@ def manifest(args):
 
     imgdir = args[1]
 
-    mani(imgdir)
-
-    return True
+    if mani(imgdir):
+        return True
+    else:
+        log.info("Could not generate manifest")
+        return False
 
 
 if __name__ == '__main__':

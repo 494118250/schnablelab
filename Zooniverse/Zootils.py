@@ -108,9 +108,12 @@ def upload(imgdir, projid, opts, **kwargs):
     if not osp.isfile(osp.join(imgdir, 'manifest.csv')):
         log.info("Generating manifest")
         if opts.convert:
-            manifest(imgdir, ext='jpg')
+            mani_gen_succeeded = manifest(imgdir, ext='jpg'):
         else:
-            manifest(imgdir)
+            mani_gen_succeeded = manifest(imgdir)
+        if not mani_gen_succeeded:
+            log.error("Could not generate manifest.")
+            return False
 
     mfile = open(osp.join(imgdir, 'manifest.csv'), 'r')
     fieldnames = mfile.readline().strip().split(",")
@@ -184,6 +187,7 @@ def manifest(imgdir, ext=None):
     if not osp.isdir(imgdir):
         log.error("Image directory '{}' does not exist"
                   .format(imgdir))
+        return False
 
     log.info("Manifest being generated with fields: [ id, filename ]")
     mfile = open(osp.join(imgdir, 'manifest.csv'), 'w')
@@ -225,7 +229,7 @@ def manifest(imgdir, ext=None):
     return True
 
 
-def export(projid, outfile, opts):
+def export(projid, outfile_path, opts):
     '''
     %prog export project_id output_dir
 
@@ -244,22 +248,34 @@ def export(projid, outfile, opts):
     '''
 
     project = utils.connect(projid)
+    export = utils.get_export(project, opts.type)
 
-    try:
-        log.info("Getting export, this may take a lot of time.")
-        export = project.get_export(opts.type)
-        with open(outfile, 'w') as zoof:
-            zoof.write(export.text)
-    except PanoptesAPIException as e:
-        log.error("Error getting export")
-        for arg in e.args:
-            log.error("> " + arg)
+    if not osp.exists(osp.dirname(outfile_path)):
+        log.error("Image directory '{}' does not exist"
+                  .format(imgdir))
         return False
+
+    with open(outfile, 'w') as zoof:
+        zoof.write(export.text)
 
     return True
 
 
 class utils:
+
+    def get_export(project, type='Classifications')
+        try:
+            log.info("Getting export, this may take a lot of time.")
+            export = project.get_export(type)
+        except PanoptesAPIException as e:
+            log.error("Error getting export")
+            for arg in e.args:
+                log.error("> " + arg)
+            return False
+
+        return export
+
+
     def convert(imgdir, ext=None):
         ''' Image compression and conversion to jpg '''
 
