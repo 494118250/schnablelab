@@ -19,19 +19,50 @@ def main():
         ('genlabel', 'genearte label for training image files'),
         ('extract_info', 'extract testing and prediction results from dpp log file'),
         ('statistics', 'calculate CountDiff, AbsCountDiff, MSE, Agreement, r2, p_value, and draw scatter, bar plots'),
-        ('subsampling', 'create balanced training dataset for each class'),
+        ('gentraining', 'create balanced training dataset for each class'),
+        ('gentesting', 'create balanced testing dataset for each class'),
             )
     p = ActionDispatcher(actions)
     p.dispatch(globals())
 
-
-def subsampling(args):
+def gentesting(args):
     """
-    %prog source_imgs_dir source_imgs_csv cls_range(eg: 5-10) imgs_per_cls output_dir
+    %prog source_imgs_dir source_imgs_csv training_imgs_csv testing_imgs_per_cls output_dir
+
+    create the balanced testing dataset for each class
+    """
+    p = OptionParser(gentraining.__doc__)
+    p.add_option('--header', default=None,
+        help = 'spefiy if the source csv file has header')
+    p.add_option('--comma_sep', default=True,
+        help = 'spefiy if the csv file is separated by comma')
+    p.add_option('--groupby_col', default=1,
+        help = 'spefiy the groupy column. 0: 1st column; 1: 2nd column')
+    opts, args = p.parse_args(args)
+    if len(args) == 0:
+        sys.exit(not p.print_help())
+    source_dir, source_csv, training_csv, ipc, testing_dir = args # ipc: number of images per class.
+
+    # read the source csv file
+    if opts.header and opts.comma_sep: # without header with ,
+        df0 = pd.read_csv(source_csv, header=None)
+    elif (not opts.header) and opts.comma_sep: # with header with ,
+        df0 = pd.read_csv(source_csv)
+    elif not (opts.header and opts.comma_sep): # with header with tab/space
+        df0 = pd.read_csv(source_csv, delim_whitespace=True)
+    else:
+        print('keke... implement this option first!')
+    print('shape of source csv %s: %s'%(mycsv, df0.shape))
+
+    
+
+def gentraining(args):
+    """
+    %prog source_imgs_dir source_imgs_csv cls_range(eg: 5-10) training_imgs_per_cls output_dir
 
     create the balanced training dataset where each class has the same number of images
     """
-    p = OptionParser(statistics.__doc__)
+    p = OptionParser(gentraining.__doc__)
     p.add_option('--header', default=None,
         help = 'spefiy if the source csv file has header')
     p.add_option('--comma_sep', default=True,
@@ -75,8 +106,6 @@ def subsampling(args):
             copy(sr_dir/fn, train_dir)
     print('Done!')    
     
-    
-
 def genlabel(args):
     """
     %prog train_dir label_fn
@@ -138,9 +167,26 @@ def convert2list(lines):
                 pass
     return vs
 
+def extract_num(lists):
+    if len(lists)==1:
+        nums = [float(i) for i in lists[0].split('[')[-1].split(']')[0].split()]
+    else:
+        nums = []
+        for line in lists:
+            if '[' in line:
+                ns = [float(i) for i in line.split('[')[-1].split()]
+                nums.extend(ns)
+            elif ']' in line:
+                ns = [float(i) for i in line.split(']')[0].split()]
+                nums.extend(ns)
+            else:
+                ns = [float(i) for i in line.split()]
+                nums.extend(ns)
+    return nums
+
 def extract_info(args):
     """
-    %prog log_file output_prefix
+    %prog log_file output_fn
     
     extract testing and prediction results from dpp log file
     """
@@ -149,35 +195,29 @@ def extract_info(args):
     if len(args) == 0:
         sys.exit(not p.print_help())
     logfile, opp, = args
-
-    left, right = [], []
-    pl, pr = 0, 0
-    with open(logfile) as f:
-        for i,j in enumerate(f):
-            m = j.split()
-            if len(m)>1 and m[1]=='[':
-                left.append(i)
-                pl=i
-            if j[-2]==']' and i>pl and pl!=0:
-                pr = i
-                right.append(i+1)
-    print(left)
-    print(right)
-    f1 = open(logfile)
-    all_rows = f1.readlines()
-    f1.close()
-    ground_truth_rows = all_rows[left[0]: right[0]]
-    prediction_rows = all_rows[left[1]: right[1]]
-    ground_truth = convert2list(ground_truth_rows)
-    prediction = convert2list(prediction_rows)
-    #print(ground_truth)
-    #print(len(ground_truth))
-    #print(prediction)
-    #print(len(prediction))
     
+    f0 = open(logfile)
+    all_lines = f0.readlines()
+    test_idx, predict_idx, hist_idx = 0, 0, 0
+    for i,j in enumerate(all_lines):
+        if 'All test labels:' in j:
+            test_idx = i
+        if 'All predictions:' in j:
+            predict_idx = i
+        if 'Histogram of ' in j:
+            hist_idx = i
+
+    test_lines = all_lines[test_idx+1: predict_idx]
+    ground_truth = extract_num(test_lines)
+    #print(len(ground_truth), '\n', ground_truth)
+
+    predict_lines = all_lines[predict_idx+1: hist_idx]
+    prediction = extract_num(predict_lines)
+    #print(len(prediction), '\n', prediction)
+
     df = pd.DataFrame(dict(zip(['ground_truth', 'prediction'], [ground_truth, prediction])))
-    df.to_csv('%s.csv'%opp, index=False, sep='\t')
-    print('Done! check %s.csv.'%opp)
+    df.to_csv(opp, index=False, sep='\t')
+    print('Done! check %s'%opp)
 
 def statistics(args):
     """
