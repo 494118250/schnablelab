@@ -108,7 +108,7 @@ def upload(imgdir, projid, opts, **kwargs):
     if not osp.isfile(osp.join(imgdir, 'manifest.csv')):
         log.info("Generating manifest")
         if opts.convert:
-            mani_gen_succeeded = manifest(imgdir, ext='jpg'):
+            mani_gen_succeeded = manifest(imgdir, ext='jpg')
         else:
             mani_gen_succeeded = manifest(imgdir)
         if not mani_gen_succeeded:
@@ -248,14 +248,14 @@ def export(projid, outfile_path, opts):
     '''
 
     project = utils.connect(projid)
-    export = utils.get_export(project, opts.type)
+    export = utils.get_export(project, type=opts.type)
 
     if not osp.exists(osp.dirname(outfile_path)):
         log.error("Image directory '{}' does not exist"
                   .format(imgdir))
         return False
 
-    with open(outfile, 'w') as zoof:
+    with open(outfile_path, 'w') as zoof:
         zoof.write(export.text)
 
     return True
@@ -263,9 +263,9 @@ def export(projid, outfile_path, opts):
 
 class utils:
 
-    def get_export(project, type='Classifications')
+    def get_export(project, type='classifications'):
         try:
-            log.info("Getting export, this may take a lot of time.")
+            log.info("Getting export, this may take some time...")
             export = project.get_export(type)
         except PanoptesAPIException as e:
             log.error("Error getting export")
