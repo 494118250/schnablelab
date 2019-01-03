@@ -130,9 +130,9 @@ def upload(imgdir, projid, opts, **kwargs):
         try:
 
             # Check file size
-            filesize = osp.getsize(row['filename'])
-            if filesize > 256000:
-                log.warning("File size of {}K is larger than recommended 256K"
+            filesize = osp.getsize(row['filename']) / 1000
+            if filesize > 256:
+                log.warning("File size of {}KB is larger than recommended 256KB"
                          .format(filesize))
 
             temp_subj = pan.Subject()
