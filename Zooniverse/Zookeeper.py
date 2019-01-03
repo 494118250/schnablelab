@@ -35,6 +35,8 @@ def upload(args):
                  help='Designate a subject set id.')
     p.add_option('-q', '--quiet', action='store_true', default=False,
                  help='Silences output when uploading images to zooniverse.')
+    p.add_option('-x', '--extension', default=False,
+                 help='Specify the extension of the image files to be uploaded.')
     '''
     p.add_option('-c', '--convert', action='store_true', default=False,
                  help="Compress and convert files to jpg for faster load times"
