@@ -107,8 +107,8 @@ def upload(imgdir, projid, opts, **kwargs):
 
     if not osp.isfile(osp.join(imgdir, 'manifest.csv')):
         log.info("Generating manifest")
-        if opts.convert:
-            manifest(imgdir, ext='jpg')
+        if opts.extension:
+            manifest(imgdir, ext=opts.extension)
         else:
             manifest(imgdir)
 
