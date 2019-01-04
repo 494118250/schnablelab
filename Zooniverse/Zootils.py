@@ -107,12 +107,12 @@ def upload(imgdir, projid, opts, **kwargs):
 
     if not osp.isfile(osp.join(imgdir, 'manifest.csv')):
         log.info("Generating manifest")
-        if opts.convert:
-            mani_gen_succeeded = manifest(imgdir, ext='jpg')
+        if opts.extension:
+            mani_gen_succeeded = manifest(imgdir, ext=opts.extension)
         else:
             mani_gen_succeeded = manifest(imgdir)
         if not mani_gen_succeeded:
-            log.error("Could not generate manifest.")
+            log.error("Could not upload images, no manifest.")
             return False
 
     mfile = open(osp.join(imgdir, 'manifest.csv'), 'r')
