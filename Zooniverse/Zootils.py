@@ -257,7 +257,12 @@ def export(projid, outfile, opts):
 
     try:
         log.info("Getting export, this may take a lot of time.")
-        export = project.get_export(opts.type, generate=True)
+        export = project.get_export(opts.type)
+
+        # TODO: this line should also generate an existing report
+        # but the report never downloads and goes into an infinite loop
+        # export = project.get_export(opts.type, generate=True)
+
         with open(outfile, 'w') as zoof:
             zoof.write(export.text)
     except PanoptesAPIException as e:
