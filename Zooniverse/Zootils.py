@@ -20,8 +20,9 @@ except ImportError:
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
-log.addHandler(logging.FileHandler(__name__ + '.log'))
-log.info('### EXECUTION DATE TIME: ' + dt.now().isoformat() + ' ###')
+log.addHandler(logging.FileHandler(osp.join(osp.dirname(__file__),
+                                            'zootils.log')))
+log.info('### ' + dt.now().isoformat() + ' ###')
 log.addHandler(logging.StreamHandler())
 
 def upload(imgdir, projid, opts, **kwargs):
@@ -108,9 +109,12 @@ def upload(imgdir, projid, opts, **kwargs):
     if not osp.isfile(osp.join(imgdir, 'manifest.csv')):
         log.info("Generating manifest")
         if opts.extension:
-            manifest(imgdir, ext=opts.extension)
+            manif_gen_succeeded = manifest(imgdir, ext=opts.extension)
         else:
-            manifest(imgdir)
+            manif_gen_succeeded = manifest(imgdir)
+        if not manif_gen_succeeded:
+            log.error("No images to upload.")
+            return False
 
     mfile = open(osp.join(imgdir, 'manifest.csv'), 'r')
     fieldnames = mfile.readline().strip().split(",")
@@ -128,8 +132,7 @@ def upload(imgdir, projid, opts, **kwargs):
 
     for row in reader:
         try:
-
-            # Check file size
+            # getsize returns file size in bytes
             filesize = osp.getsize(row['filename']) / 1000
             if filesize > 256:
                 log.warning("File size of {}KB is larger than recommended 256KB"
@@ -146,18 +149,27 @@ def upload(imgdir, projid, opts, **kwargs):
             log.error("Error on row: {}".format(row))
             for arg in e.args:
                 log.error("> " + arg)
-            continue
+            log.info("Trying again...")
+            try:
+                subject_set.add(temp_subj)
+            except PanoptesAPIException as e2:
+                for arg in e2.args:
+                    log.error("> " + arg)
+                log.info("Skipping")
+                continue
+            success_count += 1
 
         success_count += 1
         log.debug("{}- {} - success"
                 .format(success_count,
                         str(osp.basename(row['filename']))))
 
-    log.info("Upload completed at: " + dt.now().strftime("%H:%M:%S %m/%d/%y"))
-
-    log.info("{} of {} images loaded".format(success_count,
+    log.info("DONE")
+    log.info("Summary:")
+    log.info("  Upload completed at: " + dt.now().strftime("%H:%M:%S %m/%d/%y"))
+    log.info("  {} of {} images loaded".format(success_count,
                                              success_count + error_count))
-
+    log.info("\n")
     log.info("Remember to link your workflow to this subject set")
 
     return True
@@ -179,11 +191,11 @@ def manifest(imgdir, ext=None):
         None
 
     Notes:
-        - Supported image types: [ tiff, jpg, png ] - can easily append
+        - Default supported image types: [ tiff, jpg, png ] - can specify any
     '''
     if not osp.isdir(imgdir):
-        log.error("Image directory '{}' does not exist"
-                  .format(imgdir))
+        log.error("Image directory " + imgdir + " does not exist")
+        return False
 
     log.info("Manifest being generated with fields: [ id, filename ]")
     mfile = open(osp.join(imgdir, 'manifest.csv'), 'w')
@@ -194,12 +206,8 @@ def manifest(imgdir, ext=None):
 
     if not ext:
         PATTERN = re.compile(r".*\.(jpg|png|tiff)")
-    elif ext == 'jpg':
-        PATTERN = re.compile(r".*\.jpg")
-    elif ext == 'png':
-        PATTERN = re.compile(r".*\.png")
-    elif ext == 'tiff':
-        PATTERN = re.compile(r".*\.tiff")
+    else:
+        PATTERN = re.compile(r".*\.{}".format(opts.extension))
 
     img_c = 0
     for id, filename in enumerate(os.listdir(imgdir)):
@@ -207,16 +215,18 @@ def manifest(imgdir, ext=None):
             writer.writerow(["{}-{:04d}".format(idtag, id),
                              osp.join(imgdir, filename)])
             img_c += 1
-        if img_c == 9999:
+        if img_c == 999:
             log.warning("Zooniverse's default limit of subjects per"
-                        + " user is 9999. You may not be able to load"
-                        + " this entire subject set.")
+                        + " upload is 999.")
             if not utils.get_yn("Continue adding images to manifest?"):
                 break
             img_c += 1
 
     if img_c == 0:
-        log.warning("No images found in imgdir")
+        log.error("Could not generate manifest.")
+        log.error("No images found in " + imgdir + " with file extension:"
+                  + (opts.extension if opt.extension else "[jpg,png,tiff]"))
+        return False
     else:
         log.info("DONE: {} subjects written to manifest"
                  .format(img_c))
@@ -247,13 +257,14 @@ def export(projid, outfile, opts):
 
     try:
         log.info("Getting export, this may take a lot of time.")
-        export = project.get_export(opts.type)
+        export = project.get_export(opts.type, generate=True)
         with open(outfile, 'w') as zoof:
             zoof.write(export.text)
     except PanoptesAPIException as e:
         log.error("Error getting export")
         for arg in e.args:
             log.error("> " + arg)
+        print(e.with_traceback())
         return False
 
     return True
