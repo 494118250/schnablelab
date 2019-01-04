@@ -18,16 +18,10 @@ except ImportError:
     exit(False)
 
 
-log = logging.getLogger(__name__)
+log = logging.getLogger(__file__)
 log.setLevel(logging.DEBUG)
-<<<<<<< HEAD
-log.addHandler(logging.FileHandler(osp.join(osp.dirname(__file__),
-                                            'zootils.log')))
-log.info('### ' + dt.now().isoformat() + ' ###')
-=======
-log.addHandler(logging.FileHandler(osp.join(osp.dirname(__file__), 'zootils.log')))
-log.info('### EXECUTION DATE TIME: ' + dt.now().isoformat() + ' ###')
->>>>>>> 1728cbcab81cc9e8c292c7e3d3ac6961385432c3
+log.addHandler(logging.FileHandler(osp.abspath(__file__) + ".log"))
+log.info('### EXECUTION' + dt.now().isoformat() + ' ###')
 log.addHandler(logging.StreamHandler())
 
                
@@ -155,8 +149,8 @@ def upload(imgdir, projid, opts, **kwargs):
             log.error("Error on row: {}".format(row))
             for arg in e.args:
                 log.error("> " + arg)
-            log.info("Trying again...")
             try:
+                log.info("Trying again...")
                 subject_set.add(temp_subj)
             except PanoptesAPIException as e2:
                 for arg in e2.args:
@@ -223,7 +217,7 @@ def manifest(imgdir, ext=None):
             img_c += 1
         if img_c == 999:
             log.warning("Zooniverse's default limit of subjects per"
-                        + " upload is 999.")
+                        + " upload is 1000.")
             if not utils.get_yn("Continue adding images to manifest?"):
                 break
             img_c += 1
