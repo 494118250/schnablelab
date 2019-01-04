@@ -20,11 +20,17 @@ except ImportError:
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
+<<<<<<< HEAD
 log.addHandler(logging.FileHandler(osp.join(osp.dirname(__file__),
                                             'zootils.log')))
 log.info('### ' + dt.now().isoformat() + ' ###')
+=======
+log.addHandler(logging.FileHandler(osp.join(osp.dirname(__file__), 'zootils.log')))
+log.info('### EXECUTION DATE TIME: ' + dt.now().isoformat() + ' ###')
+>>>>>>> 1728cbcab81cc9e8c292c7e3d3ac6961385432c3
 log.addHandler(logging.StreamHandler())
 
+               
 def upload(imgdir, projid, opts, **kwargs):
     '''
     %prog upload imgdir zoo_proj_id
