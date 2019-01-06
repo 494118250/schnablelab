@@ -12,7 +12,7 @@ module load trimmomatic
 import os
 from subprocess import call
 allfiles = [i for i in os.listdir('.') if i.endswith('.fq.gz')]
-print 'Total %s fastq.gz files'%len(allfiles)
+#print 'Total %s fastq.gz files'%len(allfiles)
 for i in allfiles:
     sm = i.split('.')[0]
     cmd1 = 'trimmomatic SE %s %s CROP:185 HEADCROP:5 SLIDINGWINDOW:4:15 MINLEN:30'%(i, sm+'.trimed.fq')

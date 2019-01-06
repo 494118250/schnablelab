@@ -540,7 +540,7 @@ def subsampling(args):
     p = OptionParser(subsampling.__doc__)
     p.add_option('--header', default='no', choices=('no', 'yes'),
                  help='whether a header exist in your sample name file')
-    p.add_option('--filter', default='yes', choices=('yes', 'no'),
+    p.add_option('--filter', default='no', choices=('yes', 'no'),
                  help='if yes, SNPs with maf <= 0.01 and paralogous SNPs (bad heterozygous) will be removed automatically')
     opts, args = p.parse_args(args)
 

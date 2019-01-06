@@ -14,12 +14,12 @@ import os.path
 
 from subprocess import call
 allfiles = [i for i in os.listdir('.') if i.endswith('.vcf')]
-print allfiles
-print 'Total %s .vcf files'%len(allfiles)
+print(allfiles)
+print('Total %s .vcf files'%len(allfiles))
 for i in allfiles:
     SM = i.split('.')[0]
     cmd = "bcftools view -i 'N_ALT==1 && QUAL>=10 && MAF>=0.01 && NS/N_SAMPLES > 0.2' -v 'snps,indels' %s | bcftools norm -f /work/schnablelab/cmiao/SorghumGWAS/shared_files/references/Sbicolor_79.fa -m -both > %s.flt.vcf"%(i, SM)
-    print cmd
+    print(cmd)
     jobfile = '%s.bcftools.slurm'%SM
     f = open(jobfile, 'w')
     f.write(header%(SM,SM,SM))

@@ -12,7 +12,7 @@ module load samtools/0.1
 import os
 from subprocess import call
 allfiles = [i for i in os.listdir('.') if i.endswith('sam')]
-print 'Total %s sam files'%len(allfiles)
+#print 'Total %s sam files'%len(allfiles)
 for i in allfiles:
     SM = i.split('.')[0]
     output = '%s.bam'%SM

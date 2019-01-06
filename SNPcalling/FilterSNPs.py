@@ -37,7 +37,7 @@ def Preprocess(args):
     only applicable on the unimputed vcf files.
     """
     p = OptionParser(Preprocess.__doc__)
-    p.set_slurm_opts(array=False)
+    p.set_slurm_opts(jn=True)
     opts, args = p.parse_args(args)
 
     if len(args) == 0:
@@ -65,7 +65,7 @@ def Subsampling(args):
     Subsampling vcf file using bcftools. The samples order will also change following the order in SMs_file.
     """
     p = OptionParser(Subsampling.__doc__)
-    p.set_slurm_opts(array=False)
+    p.set_slurm_opts(jn=True)
     opts, args = p.parse_args(args)
 
     if len(args) == 0:
@@ -75,6 +75,7 @@ def Subsampling(args):
     prefix = vcffile.split('/')[-1].split('.vcf')[0]
     new_f = prefix + '.subsm.vcf'
     cmd = "bcftools view -S %s %s > %s\n"%(SMsfile, vcffile, new_f)
+    print(cmd)
     jobfile = '%s.subsm.slurm'%prefix
     f = open(jobfile, 'w')
     header = Slurm_header%(opts.time, opts.memory, opts.prefix, opts.prefix, opts.prefix)
@@ -89,7 +90,7 @@ def NUM_ALT(args):
     only retain SNPs with only one ALT    
     """
     p = OptionParser(NUM_ALT.__doc__)
-    p.set_slurm_opts(array=False)
+    p.set_slurm_opts(jn=True)
     opts, args = p.parse_args(args)
     
     if len(args) == 0:
@@ -116,7 +117,7 @@ def Missing(args):
         help = 'specify the missing rate cutoff. SNPs with missing rate higher than this cutoff will be removed.')
     p.add_option('--NS', default = 'NS', 
         help = 'specify the tag name to calculate the number of nonmissing samples. If NS, NZ are unavilable, can specify AN cause AN/2==NS')
-    p.set_slurm_opts(array=False)
+    p.set_slurm_opts(jn=True)
     opts, args = p.parse_args(args)
     if len(args) == 0:
         sys.exit(not p.print_help())

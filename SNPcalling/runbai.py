@@ -12,7 +12,7 @@ module load samtools/0.1
 import os
 from subprocess import call
 allfiles = [i for i in os.listdir('.') if i.endswith('sorted.bam')]
-print 'Total %s sorted.bam files'%len(allfiles)
+#print 'Total %s sorted.bam files'%len(allfiles)
 for i in allfiles:
     SM = i.split('.')[0]
     cmd = 'samtools index %s'%i
@@ -23,5 +23,5 @@ for i in allfiles:
     f.close()
     jobcmd = 'sbatch -p jclarke %s'%jobfile
     #jobcmd = 'sbatch %s'%jobfile
-    #print cmd
+    ##print cmd
     call(jobcmd, shell=True)

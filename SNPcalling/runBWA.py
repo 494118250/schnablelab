@@ -14,8 +14,8 @@ import os.path
 
 from subprocess import call
 allfiles = [i for i in os.listdir('.') if i.endswith('trimed.fq.gz') and not os.path.isfile(i.split('.')[0]+'.sam')]
-print allfiles
-print 'Total %s fq.gz files'%len(allfiles)
+#print allfiles
+#print 'Total %s fq.gz files'%len(allfiles)
 def runbwa(refversion):
     for i in allfiles:
         SM = i.split('.')[0]
@@ -38,4 +38,4 @@ import sys
 if len(sys.argv)==2:
     runbwa(*sys.argv[1:])
 else:
-    print 'python runbwa.py 1 or 3'
+    print('python runbwa.py 1 or 3')

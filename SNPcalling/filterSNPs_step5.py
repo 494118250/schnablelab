@@ -12,7 +12,7 @@ module load bcftools
 import os
 from subprocess import call
 allfiles = [i for i in os.listdir('.') if i.endswith('.step4.vcf')]
-print 'Total %s files'%len(allfiles)
+print('Total %s files'%len(allfiles))
 for i in allfiles:
     prefix = i.split('.')[0]
     new_fn = prefix + '.step5.vcf' 

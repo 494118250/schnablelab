@@ -13,7 +13,7 @@ import os
 from subprocess import call
 allfiles = [i for i in os.listdir('.') if i.endswith('.step3.vcf')]
 #allfiles = [i for i in os.listdir('.') if i.endswith('.step1.vcf')]
-print 'Total %s files'%len(allfiles)
+print('Total %s files'%len(allfiles))
 for i in allfiles:
     prefix = i.split('.')[0]
     new_fn = prefix + '.step4.vcf' 
