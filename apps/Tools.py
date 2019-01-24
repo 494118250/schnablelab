@@ -1,9 +1,15 @@
+from __future__ import print_function
 import pandas as pd
 from pathlib import Path
 import matplotlib.pyplot as plt
 from sklearn.metrics import mean_squared_error
 import numpy as np
 from scipy.stats import linregress
+from collections import defaultdict
+import sys
+
+def eprint(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
 
 def GenDataFrameFromPath(path, pattern='*.png'):
     """
@@ -33,6 +39,22 @@ def ConciseVcf(fn):
         df[idx] = df[idx].map(lambda x: x.split(':')[0])
     df = df.replace(['0/0', '0/1', '1/0', '1/1', './.'], [0, 1, 1, 2, 9])
     return df
+
+def getChunk(fn):
+    df0_chr = defaultdict(int)
+    chr_order = []
+    with open(fn) as f:
+        f.readline()
+        for i in f:
+            j = i.split()[0].split('-')[0]
+            df0_chr[j] += 1
+            if j in chr_order:
+                pass
+            else:
+                chr_order.append(j)
+    if len(chr_order) != len(set(chr_order)):
+        sys.exit('Please check your marker name and sort them by chr name.')
+    return chr_order, df0_chr
             
 class SimpleStats(object):
     """

@@ -3,6 +3,7 @@ basic support for running library as script
 """
 
 import os
+import time
 import os.path as op
 import glob
 import sys
@@ -141,6 +142,18 @@ class OptionParser(OptionP):
             group.add_option('-g', dest='gpu',
                              help='specify the gpu model(k20,k40,p100). Leave empty for unconstraint.')
         self.add_option_group(group)
+    
+    def set_cpus(self, cpus=0):
+        """
+        Add --cpus options to specify how many threads to use.
+        """
+        from multiprocessing import cpu_count
+
+        max_cpus = cpu_count()
+        if not 0 < cpus < max_cpus:
+            cpus = max_cpus
+        self.add_option("--cpus", default=cpus, type="int",
+                     help="Number of CPUs to use, 0=unlimited [default: %default]")
 
 
 def get_module_docstring(filepath):
@@ -152,6 +165,12 @@ def get_module_docstring(filepath):
         docstring = None
     return docstring
 
+def get_today():
+    """
+    Returns the date in 2010-07-14 format
+    """
+    from datetime import date
+    return str(date.today())
 
 def splitall(path):
     allparts = []
