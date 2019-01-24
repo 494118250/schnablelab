@@ -241,7 +241,7 @@ class CorrectOO(object):
 
 def correct(args):
     """
-    %prog config.txt input.matrix 
+    %prog correct config.txt input.matrix 
 
     Correct wrong genotype calls and impute missing values in `input.matrix` using sliding
     window method with parameters defined in `config.txt`.
@@ -342,10 +342,78 @@ def correct(args):
         df_debug.to_csv(opf+'.debug', sep='\t', index=True)
     print('Done!')
 
+def filtermissing(args):
+    """
+    %prog filtermissing input.matrix output.matrix
+
+    run quality control of the missing genotypes in the input.matrix before starting the correction.
+    """
+    p = OptionParser(filtermissing.__doc__)
+    p.add_option("-i", "--input", help=SUPPRESS_HELP)
+    p.add_option("-o", "--output", help=SUPPRESS_HELP)
+    p.add_option('--cutoff_snp', default=0.5, type='float',
+                help = "SNP with missing rate higher than this value will be removed")
+    p.add_option('--rm_bad_samples', default=False, action="store_true",
+                help='remove bad samples after controlling the SNPs with high missing rate')
+    p.add_option('--cutoff_sample', type='float',
+                help = "sample missing rate higher than this value will be removed after controlling the SNP missing rate")
+    q = OptionGroup(p, "format options")
+    p.add_option_group(q)
+    q.add_option('--homo1', default="A",
+                help='character for homozygous genotype')
+    q.add_option("--homo2", default='B',
+                help="character for alternative homozygous genotype")
+    q.add_option('--hete', default='X',
+                help='character for heterozygous genotype')
+    q.add_option('--missing', default='-',
+                help='character for missing value')
+    opts, args = p.parse_args(args)
+
+    if len(args) != 2:
+        sys.exit(not p.print_help())
+
+    if opts.rm_bad_samples and not opts.cutoff_sample:
+        eprint('missing value cutoff for --cutoff_sample option must be specified when --rm_bad_samples added.')
+        sys.exit(1)
+
+    inmap, outmap = args
+    inputmatrix = opts.input or inmap
+    outputmatrix = opts.output or outmap
+
+    chr_order, chr_nums = getChunk(inputmatrix)
+    map_reader = pd.read_csv(inputmatrix, delim_whitespace=True, index_col=[0, 1],  iterator=True)
+    Good_SNPs = []
+    for chrom in chr_order:
+        print('{}...'.format(chrom))
+        chunk = chr_nums[chrom]
+        df_chr_tmp = map_reader.get_chunk(chunk)
+        df_chr_tmp_num = df_chr_tmp.replace([opts.homo1, opts.homo2, opts.hete, opts.missing], [0, 2, 1, 9])
+        snp_num, sample_num = df_chr_tmp_num.shape
+        good_rates = df_chr_tmp_num.apply(lambda x: (x==9).sum()/sample_num, axis=1) <= opts.cutoff_snp
+        good_snp = df_chr_tmp.loc[good_rates, :]
+        Good_SNPs.append(good_snp)
+    df1 = pd.concat(Good_SNPs)
+    before_snp_num = sum(chr_nums.values())
+    after_snp_num, before_sm_num = df1.shape
+    pct = after_snp_num/float(before_snp_num)*100
+    print('{} SNP markers before quality control.'.format(before_num))
+    print('{}({:.1f}%) markers left after the quality control.'.format(after_num, pct))
+
+    if opts.rm_bad_samples:
+        print('start quality control on samples')
+        good_samples = df1.apply(lambda x: (x==opts.missing).sum()/after_num, axis=0) <= opts.cutoff_sample
+        df2 = df1.loc[:,good_samples]
+        after_sm_num = df2.shape[1]
+        pct_sm = after_sm_num/float(before_sm_num)*100
+        print('{} samples before quality control.'.format(before_sm_num))
+        print('{}({:.1f}%) markers left after the quality control.'.format(after_sm_num, pct_sm))
+        df2.to_csv(outputmatrix, sep='\t', index=True)
+    else:
+        df1.to_csv(outputmatrix, sep='\t', index=True)
 
 def main():
     actions = (
-        ('filtermissing', 'make fake scaffolds.fasta'),
+        ('filtermissing', 'quality control of the missing gneotypes before correction'),
         ('cstest', 'merge csv maps and convert to bed format'),
         ('mergemarkers', 'merge maps in bed format'),
         ('correct', 'correct wrong genotype calls'),
