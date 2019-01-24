@@ -8,6 +8,18 @@ from scipy.stats import linregress
 from collections import defaultdict
 import sys
 
+def random_alternative(lens, values=[0,2]):
+    """
+    return a numpy array with alternating interger values
+    """
+    v1, v2 = values
+    st_value = np.random.choice(values)
+    alternative_value = v1 if st_value == v2 else v2
+    a = np.empty((lens,))
+    a[::2] = st_value
+    a[1::2] = alternative_value
+    return a.astype('int')
+
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 

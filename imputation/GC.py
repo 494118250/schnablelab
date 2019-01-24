@@ -4,22 +4,18 @@
 """
 Correct Genotype Calls with Sliding Window Method.
 """
-import os.path as op
-import os
+
 import re
 import sys
 import logging
 import pandas as pd
 import numpy as np
-import networkx as nx
 from scipy import stats
 from pathlib import Path
-from itertools import combinations, product
 from collections import defaultdict, Counter
-from functools import partial
 from JamesLab import __version__ as version
-from JamesLab.apps.Tools import getChunk, eprint
-from JamesLab.apps.base import OptionParser, OptionGroup, ActionDispatcher, get_today, SUPPRESS_HELP
+from JamesLab.apps.Tools import getChunk, eprint, random_alternative
+from JamesLab.apps.base import OptionParser, OptionGroup, ActionDispatcher, SUPPRESS_HELP
 try: 
     from ConfigParser import ConfigParser
 except ModuleNotFoundError:
@@ -45,6 +41,28 @@ class ParseConfig(object):
         self.error_b = config.getfloat('Section3', 'error_rate_for_homo2')
         self.error_h = abs(self.error_a - self.error_b)
         self.win_size = config.getint('Section4', 'Sliding_window_size')
+
+def het2hom(seqnum):
+    """
+    temporarily convert heterozygous to homozygous as random as possible
+    """
+    seqnum_tmp = seqnum.copy()
+    grouper = (seqnum_tmp.diff(1)!=0).astype('int').cumsum()
+    for __, grp in seqnum_tmp.groupby(grouper):
+        geno, lens = grp.unique()[0], grp.shape[0]
+        if geno==1:
+            if lens > 1:
+                homos = random_alternative(lens)
+                seqnum_tmp[grp.index] = homos
+    if seqnum_tmp[0] == 1:
+        seqnum_tmp[0] = np.random.choice([0,2])
+    
+    het_idx = seqnum_tmp[seqnum_tmp==1].index
+    nearby_homo = seqnum_tmp[het_idx-1]
+    rep_dict = {0:2, 2:0, 9:np.random.choice([0,2])}
+    replace_genos = nearby_homo.apply(lambda x: rep_dict[x])
+    seqnum_tmp[het_idx] = replace_genos
+    return seqnum_tmp
 
 def get_mid_geno(np_array, cargs_obj):
     """
@@ -197,10 +215,8 @@ class CorrectOO(object):
     def __init__(self, config_params, orig_seq_without_idx_num):
         self.cargs = config_params
         self.seq_num = orig_seq_without_idx_num
-        self.seq_num_no1 = self.seq_num.apply(lambda x: np.random.choice([0,2]) if x==1 else x)
-        
+        self.seq_num_no1 = het2hom(self.seq_num)
         self.rolling_geno = self.seq_num_no1.rolling(self.cargs.win_size, center=True).apply(get_mid_geno, raw=True, args=(self.cargs,))
-
         self.rolling_score = self.seq_num_no1.rolling(self.cargs.win_size, center=True).apply(get_score, raw=True, args=(self.cargs,))
 
         # debug the h island
@@ -220,7 +236,6 @@ class CorrectOO(object):
                     real_genos = callback(h_score_island)
                     self.rolling_geno[grp.index] = real_genos
 
-        
         # substitute NaNs with original genotypes
         self.corrected = self.rolling_geno.where(~self.rolling_geno.isna(), other=self.seq_num).astype('int')
 
@@ -235,10 +250,10 @@ def correct(args):
     p.add_option("-c", "--configfile", help=SUPPRESS_HELP)
     p.add_option("-m", "--matrixfile", help=SUPPRESS_HELP)
     p.add_option('--itertimes', default=7, type='int', 
-                help='correction times to reach the stablized status')
+                help='maximum correction times to reach the stablized status')
     q = OptionGroup(p, "output options")
     p.add_option_group(q)
-    q.add_option('--opp', 
+    q.add_option('--opp', default="'infer'",
                 help='specify the prefix of the output file names')
     q.add_option("--logfile", default='GC.correct.log',
                 help="specify the file saving running info")
@@ -255,7 +270,7 @@ def correct(args):
     inputmatrix = opts.matrixfile or mapfile
     inputconfig = opts.configfile or configfile
 
-    opf = '{}.map'.format(opts.opp) if opts.opp else inputmatrix.rsplit(".", 1)[0]+'.corrected.map' # output file
+    opf = inputmatrix.rsplit(".", 1)[0]+'.corrected.map' if opts.opp=="'infer'" else '{}.map'.format(opts.opp) # output file
     if Path(opf).exists():
         eprint("ERROR: Filename collision. The future output file `{}` exists".format(opf))
         sys.exit(1)
@@ -271,6 +286,9 @@ def correct(args):
         format="%(asctime)s:%(levelname)s:%(message)s")
 
     cargs = ParseConfig(inputconfig)
+    if cargs.win_size % 2 == 0:
+        eprint("ERROR: The slding window value cannot be even")
+        sys.exit(1)
     logging.debug("Parameters in config file: {0}".format(cargs.__dict__))
 
     chr_order, chr_nums = getChunk(inputmatrix)
@@ -313,12 +331,16 @@ def correct(args):
             tmp_sm_list.append(final_seq)
         df_sm_tmp = pd.concat(tmp_sm_list, axis=1)
         tmp_chr_list.append(df_sm_tmp)
-    df = pd.concat(tmp_chr_list)
+    df_corrected = pd.concat(tmp_chr_list)
     
-    df.to_csv(opf, sep='\t', index=True)
+    df_corrected.to_csv(opf, sep='\t', index=True)
 
     if opts.debug:
-        pass
+        logging.debug('generating the tmp file for debug use...')
+        df_uncorrected = pd.read_csv(inputmatrix, delim_whitespace=True, index_col=[0, 1])
+        df_debug = df_corrected.where(df_corrected==df_uncorrected, other=df_corrected+'('+df_uncorrected+')')
+        df_debug.to_csv(opf+'.debug', sep='\t', index=True)
+    print('Done!')
 
 
 def main():

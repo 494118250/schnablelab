@@ -322,7 +322,7 @@ def FixPlinkPed(args):
     with open(old_prefix + '.map') as f:
         for i in f:
             j = i.split()
-            Chr = j[1].split('_')[1]
+            Chr = int(j[1].split('_')[0].lstrip('S'))
             new_l = '%s\t%s\t0\t%s\n' % (Chr, j[1], j[3])
             f1.write(new_l)
     f2 = open(new_prefix + '.ped', 'w')
@@ -688,7 +688,7 @@ def IndePvalue(args):
         sys.exit(not p.print_help())
 
     bed, output = args
-    mem = int(opts.memory) / 1000 - 2
+    mem = int(opts.memory / 1000) - 2
     cmd = 'java -Xmx%sg -jar %s --noweb --effect-number --plink-binary %s --genome --out %s' % (mem, GEC, bed, output)
     h = Slurm_header
     h += 'module load java/1.8\n'
