@@ -4,7 +4,7 @@
 """
 Correct Genotype Calls with Sliding Window Method.
 """
-
+from __future__ import division
 import re
 import sys
 import logging
@@ -12,7 +12,6 @@ import pandas as pd
 import numpy as np
 from scipy.stats import binom, chisquare
 from pathlib import Path
-from __future__ import division
 from collections import defaultdict, Counter
 from JamesLab import __version__ as version
 from JamesLab.apps.Tools import getChunk, eprint, random_alternative
@@ -343,13 +342,13 @@ def correct(args):
         df_debug.to_csv(opf+'.debug', sep='\t', index=True)
     print('Done!')
 
-def filtermissing(args):
+def qc_missing(args):
     """
     %prog filtermissing input.matrix output.matrix
 
     run quality control of the missing genotypes in the input.matrix before starting the correction.
     """
-    p = OptionParser(filtermissing.__doc__)
+    p = OptionParser(qc_missing.__doc__)
     p.add_option("-i", "--input", help=SUPPRESS_HELP)
     p.add_option("-o", "--output", help=SUPPRESS_HELP)
     p.add_option('--cutoff_snp', default=0.5, type='float',
@@ -397,12 +396,12 @@ def filtermissing(args):
     before_snp_num = sum(chr_nums.values())
     after_snp_num, before_sm_num = df1.shape
     pct = after_snp_num/float(before_snp_num)*100
-    print('{} SNP markers before quality control.'.format(before_num))
-    print('{}({:.1f}%) markers left after the quality control.'.format(after_num, pct))
+    print('{} SNP markers before quality control.'.format(before_snp_num))
+    print('{}({:.1f}%) markers left after the quality control.'.format(after_snp_num, pct))
 
     if opts.rm_bad_samples:
         print('start quality control on samples')
-        good_samples = df1.apply(lambda x: (x==opts.missing).sum()/after_num, axis=0) <= opts.cutoff_sample
+        good_samples = df1.apply(lambda x: (x==opts.missing).sum()/after_snp_num, axis=0) <= opts.cutoff_sample
         df2 = df1.loc[:,good_samples]
         after_sm_num = df2.shape[1]
         pct_sm = after_sm_num/float(before_sm_num)*100
@@ -412,19 +411,19 @@ def filtermissing(args):
     else:
         df1.to_csv(outputmatrix, sep='\t', index=True)
 
-def sdtest(args):
+def qc_sd(args):
     """
     %prog sdtest input.matrix output.matrix
 
     run quality control on segregation distortions in each SNP.
     """
-    p = OptionParser(sdtest.__doc__)
+    p = OptionParser(qc_sd.__doc__)
     p.add_option("-i", "--input", help=SUPPRESS_HELP)
     p.add_option("-o", "--output", help=SUPPRESS_HELP)
     p.add_option('--population', default='RIL', choices=('RIL', 'F2', 'BCFn'),
                 help = "population type")
-    p.add_option('--sig_cutoff', default = 3, type='int',
-                help = "set the chi square test cutoff strigency.")
+    p.add_option('--sig_cutoff', default = 1e-2, type='float',
+                help = "set the chi square test cutoff. 0(less strigent) to 1(more strigent)")
     q = OptionGroup(p, "format options")
     p.add_option_group(q)
     q.add_option('--homo1', default="A",
@@ -444,38 +443,40 @@ def sdtest(args):
     inputmatrix = opts.input or inmap
     outputmatrix = opts.output or outmap
 
-    cutoff = 1/10*opts.sig_cutoff
-    print('chi_square test pvalue cutoff: %s'%cutoff)
-
+    if opts.sig_cutoff >=1 or opts.sig_cutoff <= 0:
+        eprint('the cutoff chi square test should be smaller than 1 and larger than 0')
+        sys.exit(1)
 
     chr_order, chr_nums = getChunk(inputmatrix)
-    map_reader = pd.read_csv(inputmatrix, delim_whitespace=True, index_col=[0, 1],  iterator=True)
+    map_reader = pd.read_csv(inputmatrix, delim_whitespace=True, index_col=[0, 1], iterator=True)
     Good_SNPs = []
     for chrom in chr_order:
         print('{}...'.format(chrom))
         chunk = chr_nums[chrom]
         df_chr_tmp = map_reader.get_chunk(chunk)
         df_chr_tmp_num = df_chr_tmp.replace([opts.homo1, opts.homo2, opts.hete, opts.missing], [0, 2, 1, 9])
-
-        ob_0, ob_2 = (df_chr_tmp_num==0).sum(axis=1), (df_chr_tmp_num==2).sum(axis=1)
-        
-        ob_sum = ob_0 + ob_2
-        exp_0, exp_0 = ob_sum*0.75, ob_sum*0.25 if opts.population == 'BCFn' else ob_sum*0.5, ob_sum*0.5
-        
-
-        good_snp = df_chr_tmp.loc[good_rates, :]
+        ob0, ob2 = (df_chr_tmp_num==0).sum(axis=1), (df_chr_tmp_num==2).sum(axis=1)
+        obsum = ob0 + ob2
+        exp0, exp2 = (obsum*0.75, obsum*0.25) if opts.population == 'BCFn' else (obsum*0.5, obsum*0.5)
+        df_chi = pd.DataFrame(dict(zip(['ob0', 'ob2', 'exp0', 'exp2'], [ob0, ob2, exp0, exp2])))
+        min5_cond = (df_chi['ob0']>5) & (df_chi['ob2']>5)
+        df_chi_min5 = df_chi[min5_cond]
+        df_chi_min5['pvalues'] = chisquare([df_chi_min5['ob0'], df_chi_min5['ob2']], [df_chi_min5['exp0'], df_chi_min5['exp2']]).pvalue
+        sig_cond = df_chi_min5['pvalues'] >= opts.sig_cutoff
+        good_snp = df_chr_tmp.loc[df_chi_min5[sig_cond].index, :]
         Good_SNPs.append(good_snp)
     df1 = pd.concat(Good_SNPs)
     before_snp_num = sum(chr_nums.values())
-    after_snp_num, before_sm_num = df1.shape
+    after_snp_num = df1.shape[0]
     pct = after_snp_num/float(before_snp_num)*100
-    print('{} SNP markers before quality control.'.format(before_num))
-    print('{}({:.1f}%) markers left after the quality control.'.format(after_num, pct))
-
+    print('{} SNP markers before quality control.'.format(before_snp_num))
+    print('{}({:.1f}%) markers left after the quality control.'.format(after_snp_num, pct))
+    df1.to_csv(outputmatrix, sep='\t', index=True)
+    
 def main():
     actions = (
-        ('filtermissing', 'quality control of the missing gneotypes'),
-        ('sdtest', 'quality control on segregation distortions'),
+        ('qc_missing', 'quality control of the missing gneotypes'),
+        ('qc_sd', 'quality control on segregation distortions'),
         ('mergemarkers', 'merge maps in bed format'),
         ('correct', 'correct wrong genotype calls'),
         ('cleanup', 'clean redundant info in the tmp matirx file'),
