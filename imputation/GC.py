@@ -472,13 +472,68 @@ def qc_sd(args):
     print('{} SNP markers before quality control.'.format(before_snp_num))
     print('{}({:.1f}%) markers left after the quality control.'.format(after_snp_num, pct))
     df1.to_csv(outputmatrix, sep='\t', index=True)
-    
+
+def qc_hetero(args):
+    """
+    %prog qc_hetero input.matrix output.matrix
+
+    run quality control on the continuous same homozygous in heterozygous region.
+    """
+    p = OptionParser(qc_sd.__doc__)
+    p.add_option("-i", "--input", help=SUPPRESS_HELP)
+    p.add_option("-o", "--output", help=SUPPRESS_HELP)
+    p.add_option("--read_len", default=150, type='int',
+                help="read length for SNP calling")
+    p.add_option("--logfile", default='GC.bin_markers.info',
+                help="specify the file saving binning info")
+    q = OptionGroup(p, "format options")
+    p.add_option_group(q)
+    q.add_option('--homo1', default="A",
+                help='character for homozygous genotype')
+    q.add_option("--homo2", default='B',
+                help="character for alternative homozygous genotype")
+    q.add_option('--hete', default='X',
+                help='character for heterozygous genotype')
+    q.add_option('--missing', default='-',
+                help='character for missing value')
+    opts, args = p.parse_args(args)
+
+    if len(args) != 2:
+        sys.exit(not p.print_help())
+
+    inmap, outmap = args
+    inputmatrix = opts.input or inmap
+    outputmatrix = opts.output or outmap
+
+    chr_order, chr_nums = getChunk(inputmatrix)
+    map_reader = pd.read_csv(inputmatrix, delim_whitespace=True, index_col=[0, 1], iterator=True)
+    Good_SNPs = []
+    for chrom in chr_order:
+        print('{}...'.format(chrom))
+        chunk = chr_nums[chrom]
+        df_chr_tmp = map_reader.get_chunk(chunk)
+        df_chr_tmp_num = df_chr_tmp.replace([opts.homo1, opts.homo2, opts.hete, opts.missing], [0, 2, 1, 9])
+        
+        
+
+
+        good_snp = df_chr_tmp.loc[, :]
+        Good_SNPs.append(good_snp)
+    df1 = pd.concat(Good_SNPs)
+    before_snp_num = sum(chr_nums.values())
+    after_snp_num = df1.shape[0]
+    pct = after_snp_num/float(before_snp_num)*100
+    print('{} SNP markers before quality control.'.format(before_snp_num))
+    print('{}({:.1f}%) markers left after the quality control.'.format(after_snp_num, pct))
+    df1.to_csv(outputmatrix, sep='\t', index=True)
+
 def main():
     actions = (
         ('qc_missing', 'quality control of the missing gneotypes'),
         ('qc_sd', 'quality control on segregation distortions'),
-        ('mergemarkers', 'merge maps in bed format'),
+        ('qc_hetero', 'quality control on the continuous same homozygous in heterozygous region'),
         ('correct', 'correct wrong genotype calls'),
+        ('compress', 'correct wrong genotype calls'),
         ('cleanup', 'clean redundant info in the tmp matirx file'),
         ('format', 'convert genotype matix file to other formats for the genetic map construction'),
             )
