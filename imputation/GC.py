@@ -10,8 +10,9 @@ import sys
 import logging
 import pandas as pd
 import numpy as np
-from scipy import stats
+from scipy.stats import binom, chisquare
 from pathlib import Path
+from __future__ import division
 from collections import defaultdict, Counter
 from JamesLab import __version__ as version
 from JamesLab.apps.Tools import getChunk, eprint, random_alternative
@@ -71,9 +72,9 @@ def get_mid_geno(np_array, cargs_obj):
     a_count, b_count, miss_count = count_genos(np_array)
     ab_count = a_count + b_count
     if ab_count > cargs_obj.win_size//2:
-        a_ex_prob = stats.binom.pmf(b_count, ab_count, cargs_obj.error_a)
-        h_ex_prob = stats.binom.pmf(b_count, ab_count, 0.5+cargs_obj.error_h/2)
-        b_ex_prob = stats.binom.pmf(b_count, ab_count, 1-cargs_obj.error_b)
+        a_ex_prob = binom.pmf(b_count, ab_count, cargs_obj.error_a)
+        h_ex_prob = binom.pmf(b_count, ab_count, 0.5+cargs_obj.error_h/2)
+        b_ex_prob = binom.pmf(b_count, ab_count, 1-cargs_obj.error_b)
         d = {key: value for (key, value) in zip([0, 1, 2], [a_ex_prob, h_ex_prob, b_ex_prob])}
         return max(d, key=d.get)
     else:
@@ -411,10 +412,70 @@ def filtermissing(args):
     else:
         df1.to_csv(outputmatrix, sep='\t', index=True)
 
+def sdtest(args):
+    """
+    %prog sdtest input.matrix output.matrix
+
+    run quality control on segregation distortions in each SNP.
+    """
+    p = OptionParser(sdtest.__doc__)
+    p.add_option("-i", "--input", help=SUPPRESS_HELP)
+    p.add_option("-o", "--output", help=SUPPRESS_HELP)
+    p.add_option('--population', default='RIL', choices=('RIL', 'F2', 'BCFn'),
+                help = "population type")
+    p.add_option('--sig_cutoff', default = 3, type='int',
+                help = "set the chi square test cutoff strigency.")
+    q = OptionGroup(p, "format options")
+    p.add_option_group(q)
+    q.add_option('--homo1', default="A",
+                help='character for homozygous genotype')
+    q.add_option("--homo2", default='B',
+                help="character for alternative homozygous genotype")
+    q.add_option('--hete', default='X',
+                help='character for heterozygous genotype')
+    q.add_option('--missing', default='-',
+                help='character for missing value')
+    opts, args = p.parse_args(args)
+
+    if len(args) != 2:
+        sys.exit(not p.print_help())
+
+    inmap, outmap = args
+    inputmatrix = opts.input or inmap
+    outputmatrix = opts.output or outmap
+
+    cutoff = 1/10*opts.sig_cutoff
+    print('chi_square test pvalue cutoff: %s'%cutoff)
+
+
+    chr_order, chr_nums = getChunk(inputmatrix)
+    map_reader = pd.read_csv(inputmatrix, delim_whitespace=True, index_col=[0, 1],  iterator=True)
+    Good_SNPs = []
+    for chrom in chr_order:
+        print('{}...'.format(chrom))
+        chunk = chr_nums[chrom]
+        df_chr_tmp = map_reader.get_chunk(chunk)
+        df_chr_tmp_num = df_chr_tmp.replace([opts.homo1, opts.homo2, opts.hete, opts.missing], [0, 2, 1, 9])
+
+        ob_0, ob_2 = (df_chr_tmp_num==0).sum(axis=1), (df_chr_tmp_num==2).sum(axis=1)
+        
+        ob_sum = ob_0 + ob_2
+        exp_0, exp_0 = ob_sum*0.75, ob_sum*0.25 if opts.population == 'BCFn' else ob_sum*0.5, ob_sum*0.5
+        
+
+        good_snp = df_chr_tmp.loc[good_rates, :]
+        Good_SNPs.append(good_snp)
+    df1 = pd.concat(Good_SNPs)
+    before_snp_num = sum(chr_nums.values())
+    after_snp_num, before_sm_num = df1.shape
+    pct = after_snp_num/float(before_snp_num)*100
+    print('{} SNP markers before quality control.'.format(before_num))
+    print('{}({:.1f}%) markers left after the quality control.'.format(after_num, pct))
+
 def main():
     actions = (
-        ('filtermissing', 'quality control of the missing gneotypes before correction'),
-        ('cstest', 'merge csv maps and convert to bed format'),
+        ('filtermissing', 'quality control of the missing gneotypes'),
+        ('sdtest', 'quality control on segregation distortions'),
         ('mergemarkers', 'merge maps in bed format'),
         ('correct', 'correct wrong genotype calls'),
         ('cleanup', 'clean redundant info in the tmp matirx file'),
