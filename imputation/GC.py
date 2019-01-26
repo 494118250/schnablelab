@@ -567,7 +567,28 @@ def qc_hetero(args):
     print('{} SNP markers before quality control.'.format(before_snp_num))
     print('{}({:.1f}%) markers left after the quality control.'.format(after_snp_num, pct))
     df1.to_csv(outputmatrix, sep='\t', index=True)
-    print('Done! Check {} for details.'.format(opts.logfile))
+    print('Done! Check {} for running details.'.format(opts.logfile))
+
+def cleanup(args):
+    """
+    %prog cleanup tmp.matrix out.matrix
+
+    remove redundant info for Debug in the temporary matrix file
+    """
+    p = OptionParser(cleanup.__doc__)
+    p.add_option("-i", "--input", help=SUPPRESS_HELP)
+    p.add_option("-o", "--output", help=SUPPRESS_HELP)
+    opts, args = p.parse_args(args)
+    if len(args) != 2:
+        sys.exit(not p.print_help())
+
+    inmap, outmap = args
+    inputmatrix = opts.input or inmap
+    outputmatrix = opts.output or outmap
+
+    df = pd.read_csv(inputmatrix, delim_whitespace=True, index_col=[0,1])
+    df.applymap(lambda x: x.split('(')[0]).to_csv(outputmatrix, sep='\t', index=True)
+    print('Done!')
 
 def main():
     actions = (
