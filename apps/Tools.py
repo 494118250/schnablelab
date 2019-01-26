@@ -1,12 +1,71 @@
 from __future__ import print_function
-import pandas as pd
-from pathlib import Path
-import matplotlib.pyplot as plt
-from sklearn.metrics import mean_squared_error
+import sys
 import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from pathlib import Path
 from scipy.stats import linregress
 from collections import defaultdict
-import sys
+from sklearn.metrics import mean_squared_error
+
+def sort_merge_sort(arrays):
+    """
+    get redundant lists by merging lists with overlaping region.
+    Example:
+    >>> a = [[1,3], [3, 5], [6,10], [7, 9], [11,15], [11,12],[16,30]]
+    >>> sort_merge_sort(a)
+    >>> [array([1, 3, 5]), array([ 6,  7,  9, 10]), array([11, 12, 15]), [16, 30]]
+    """
+    val_start = [i[0] for i in arrays]
+    val_end = [i[-1] for i in arrays]
+    df = pd.DataFrame(dict(zip(['array', 'val_start', 'val_end'], [arrays, val_start, val_end]))).sort_values(['val_start', 'val_end']).reset_index(drop=True)
+    first_arr = df.loc[0, 'array']
+    temp = first_arr
+    pre_arr = first_arr
+    results = []
+    for arr in df.loc[1:, 'array']:
+        if arr[0] <= pre_arr[-1]:
+            temp.extend(arr)
+        else:
+            if len(temp) == len(pre_arr):
+                results.append(pre_arr)
+            else:
+                temp_sorted_unique = pd.Series(temp).sort_values().unique()
+                results.append(temp_sorted_unique)
+            temp = arr
+        pre_arr = arr
+    if len(temp) == len(pre_arr):
+        results.append(pre_arr)
+    else:
+        temp_sorted_unique = pd.Series(temp).sort_values().unique()
+        results.append(temp_sorted_unique)
+    return results
+
+def get_blocks(np_1d_array, dist=150, block_size=2):
+    """
+    group values to a block with specified distance
+    Examples:
+    >>> a = np.array([1,2,4,10,12,13,15])
+    >>> test(a, dist=1)
+    [[1, 2], [12, 13]]
+    >>> test(a, dist=2)
+    [[1, 2, 4], [10, 12, 13, 15]]
+    """
+    first_val = np_1d_array[0]
+    temp = [first_val] # save temp blocks
+    pre_val = first_val 
+    results = []
+    for val in np_1d_array[1:]:
+        if (val - pre_val) <= dist:
+            temp.append(val)
+        else:
+            if len(temp) >= block_size:
+                results.append(temp)
+            temp = [val]
+        pre_val = val
+    if len(temp) >= block_size:
+        results.append(temp)
+    return results
 
 def random_alternative(lens, values=[0,2]):
     """

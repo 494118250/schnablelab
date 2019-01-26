@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 
 """
-Correct Genotype Calls with Sliding Window Method.
+Correct Genotype Calls Using Sliding Window Method in biparental populations
 """
 from __future__ import division
 import re
@@ -14,7 +14,7 @@ from scipy.stats import binom, chisquare
 from pathlib import Path
 from collections import defaultdict, Counter
 from JamesLab import __version__ as version
-from JamesLab.apps.Tools import getChunk, eprint, random_alternative
+from JamesLab.apps.Tools import getChunk, eprint, random_alternative, get_blocks, sort_merge_sort
 from JamesLab.apps.base import OptionParser, OptionGroup, ActionDispatcher, SUPPRESS_HELP
 try: 
     from ConfigParser import ConfigParser
@@ -388,7 +388,7 @@ def qc_missing(args):
         chunk = chr_nums[chrom]
         df_chr_tmp = map_reader.get_chunk(chunk)
         df_chr_tmp_num = df_chr_tmp.replace([opts.homo1, opts.homo2, opts.hete, opts.missing], [0, 2, 1, 9])
-        snp_num, sample_num = df_chr_tmp_num.shape
+        sample_num = df_chr_tmp_num.shape[1]
         good_rates = df_chr_tmp_num.apply(lambda x: (x==9).sum()/sample_num, axis=1) <= opts.cutoff_snp
         good_snp = df_chr_tmp.loc[good_rates, :]
         Good_SNPs.append(good_snp)
@@ -479,12 +479,12 @@ def qc_hetero(args):
 
     run quality control on the continuous same homozygous in heterozygous region.
     """
-    p = OptionParser(qc_sd.__doc__)
+    p = OptionParser(qc_hetero.__doc__)
     p.add_option("-i", "--input", help=SUPPRESS_HELP)
     p.add_option("-o", "--output", help=SUPPRESS_HELP)
     p.add_option("--read_len", default=150, type='int',
                 help="read length for SNP calling")
-    p.add_option("--logfile", default='GC.bin_markers.info',
+    p.add_option("--logfile", default='GC.qc_hetero.info',
                 help="specify the file saving binning info")
     q = OptionGroup(p, "format options")
     p.add_option_group(q)
@@ -496,6 +496,12 @@ def qc_hetero(args):
                 help='character for heterozygous genotype')
     q.add_option('--missing', default='-',
                 help='character for missing value')
+    r = OptionGroup(p, 'advanced options')
+    p.add_option_group(r)
+    r.add_option('--nonhetero_lens', default=8, type='int',
+                help='number of non heterozygous between two heterozygous in a heterozygous region')
+    r.add_option('--min_homo', default=2, type='int',
+                help='number of continuous homozygous within the read length in the heterozygous region')    
     opts, args = p.parse_args(args)
 
     if len(args) != 2:
@@ -505,20 +511,55 @@ def qc_hetero(args):
     inputmatrix = opts.input or inmap
     outputmatrix = opts.output or outmap
 
+    logging.basicConfig(filename=opts.logfile, 
+        level=logging.DEBUG,
+        format="%(asctime)s:%(levelname)s:%(message)s")
+
     chr_order, chr_nums = getChunk(inputmatrix)
     map_reader = pd.read_csv(inputmatrix, delim_whitespace=True, index_col=[0, 1], iterator=True)
     Good_SNPs = []
     for chrom in chr_order:
         print('{}...'.format(chrom))
+        logging.debug(chrom)
         chunk = chr_nums[chrom]
         df_chr_tmp = map_reader.get_chunk(chunk)
-        df_chr_tmp_num = df_chr_tmp.replace([opts.homo1, opts.homo2, opts.hete, opts.missing], [0, 2, 1, 9])
+        chr_idx = df_chr_tmp.index
+        df_chr_tmp_num = df_chr_tmp.replace([opts.homo1, opts.homo2, opts.hete, opts.missing], [0, 2, 1, 9]).loc[chrom]
         
-        
-
-
-        good_snp = df_chr_tmp.loc[, :]
-        Good_SNPs.append(good_snp)
+        chr_bin_ids = []
+        for sm in df_chr_tmp_num:
+            geno_grouper = (df_chr_tmp_num[sm].diff(1)!=0).astype('int').cumsum()
+            idx, geno, lens = [], [], []
+            for __, grp_geno in df_chr_tmp_num[sm].groupby(geno_grouper):
+                idx.append(grp_geno.index)
+                geno.append(grp_geno.unique()[0])
+                lens.append(grp_geno.shape[0])
+            df_grp_geno = pd.DataFrame(dict(zip(['idx', 'geno', 'lens'], [idx, geno, lens])))
+            df_grp_geno['type'] = df_grp_geno['geno'].apply(lambda x: 1 if x==1 else 0) # 1: hetero genotype 0: others(homo1, homo2, missing)
+            type_grouper = (df_grp_geno['type'].diff(1)!=0).astype('int').cumsum()
+            for __, grp_type in df_grp_geno.groupby(type_grouper):
+                if grp_type['type'].unique()[0] == 0:
+                    nonhetero_lens = grp_type['lens'].sum()
+                    if nonhetero_lens <= opts.nonhetero_lens:
+                        for __, row in grp_type.iterrows():
+                            if row.geno ==0 or row.geno ==2:
+                                bin_ids = get_blocks(row['idx'].values, dist=opts.read_len, block_size=opts.min_homo)
+                                if bin_ids:
+                                    for bin_index in bin_ids:
+                                        if bin_index not in chr_bin_ids:
+                                            chr_bin_ids.append(bin_index)
+        if chr_bin_ids:
+            dropping_ids = []
+            merged_bin_ids = sort_merge_sort(chr_bin_ids)
+            for idx_block in merged_bin_ids:
+                logging.debug('positions: {}'.format(idx_block))
+                genos_block = df_chr_tmp_num.loc[idx_block, :]
+                missings = genos_block.apply(lambda x: (x==9).sum(), axis=1)
+                heteros = genos_block.apply(lambda x: (x==1).sum(), axis=1)
+                dropping_index = list(pd.concat([missings, heteros], axis=1).sort_values([0, 1]).index[1:])
+                dropping_ids.extend(dropping_index)
+            df_chr_tmp = df_chr_tmp.drop(dropping_ids, level=1)
+        Good_SNPs.append(df_chr_tmp)
     df1 = pd.concat(Good_SNPs)
     before_snp_num = sum(chr_nums.values())
     after_snp_num = df1.shape[0]
@@ -526,6 +567,7 @@ def qc_hetero(args):
     print('{} SNP markers before quality control.'.format(before_snp_num))
     print('{}({:.1f}%) markers left after the quality control.'.format(after_snp_num, pct))
     df1.to_csv(outputmatrix, sep='\t', index=True)
+    print('Done! Check {} for details.'.format(opts.logfile))
 
 def main():
     actions = (
