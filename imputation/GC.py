@@ -590,72 +590,184 @@ def cleanup(args):
     df.applymap(lambda x: x.split('(')[0]).to_csv(outputmatrix, sep='\t', index=True)
     print('Done!')
 
+mst_header = """population_type {}
+population_name {}
+distance_function {}
+cut_off_p_value {}
+no_map_dist {}
+no_map_size {}
+missing_threshold {}
+estimation_before_clustering {}
+detect_bad_data {}
+objective_function {}
+number_of_loci {}
+number_of_individual {}
+
+"""
+mst_homos, mst_miss, mst_hete = ('a', 'A', 'b', 'B'), ('-', 'U'), 'X'
+
 def format(args):
-   """
+    """
     %prog format corrected.matrix 
 
     convert corrected genotype matix file to other formats(mstmap, joinmap, r/qtl) for the genetic map constructions
     """
-    p = OptionParser(cleanup.__doc__)
+    p = OptionParser(format.__doc__)
     p.add_option("-i", "--input", help=SUPPRESS_HELP)
+    p.add_option("--mstmap",  default=False, action="store_true",
+                help = 'convert to MSTmap format')
     p.add_option("--rqtl",  default=False, action="store_true",
                 help = 'convert to R/qtl format')
     p.add_option("--joinmap",  default=False, action="store_true",
                 help = 'convert to JoinMap format')
-    p.add_option("--mstmap",  default=False, action="store_true",
-                help = 'convert to MSTmap format')
+
+    q = OptionGroup(p, "format options for input matrix file")
+    p.add_option_group(q)
+    q.add_option('--homo1', default="A", choices=('a', 'A'),
+                help='character for homozygous genotype')
+    q.add_option("--homo2", default='B', choices=('b', 'B'),
+                help="character for alternative homozygous genotype")
+    q.add_option('--hete', default='X', choices=('h', 'H', 'X'),
+                help='character for heterozygous genotype')
+    q.add_option('--missing', default='-', choices=('-', 'U'),
+                help='character for missing value')
+    
+    r = OptionGroup(p, "parameters for MSTmap")
+    p.add_option_group(r)
+    r.add_option('--mstmap_pop_type',
+                help='Possible values are DH and RILd, where d is any natural number. \
+                For example, RIL6 means a RIL population at generation 6. \
+                You should use RIL2 for F2. Use DH for BC1, DH and Hap.')
+    r.add_option("--population_name", default='LinkageGroup',
+                help="ives a name for the mapping population. It can be any string of letters (a-z, A-Z) or digits (0-9)")
+    r.add_option('--distance_function', default='kosambi', choices=('kosambi', 'haldane'),
+                help="choose Kosambi's and Haldane's distance functions")
+    r.add_option('--cut_off_p_value', default=0.000001,
+                help='specifies the threshold to be used for clustering the markers into LGs')
+    r.add_option('--no_map_dist', default=15,
+                help='check mstmap manual for details')
+    r.add_option('--no_map_size', default=5,
+                help='check mstmap manual for details')
+    r.add_option('--missing_threshold', default=0.4,
+                help='any marker with more than this value will be removed completely without being mapped')
+    r.add_option('--estimation_before_clustering', default='no', choices=('yes', 'no'),
+                help='if yes, MSTmap will try to estimate missing data before clustering the markers into linkage groups')
+    r.add_option('--detect_bad_data', default='yes', choices=('yes', 'no'),
+                help='if yes turn on the error detection feature in MSTmap')
+    r.add_option('--objective_function', default='COUNT', choices=('COUNT', 'ML'),
+                help='specifies the objective function')
+    
+    s = OptionGroup(p, "parameters for JoinMap and R/qtl")
+    p.add_option_group(s)
+    s.add_option('--pop_type', default='RIL', choices=('RIL', 'F2'),
+                help='specify mapping population type. Contact me if you need supports for other population types')
+    
     opts, args = p.parse_args(args)
-    if len(args) != 2:
+    if len(args) != 1:
         sys.exit(not p.print_help())
 
-    inmap = args
+    inmap, = args
     inputmatrix = opts.input or inmap
 
-    if (not opts.rqtl) and (not opts.joinmap) and (opts.mstmap):
-        eprint("ERROR: add at least one format option.")
+    if (not opts.rqtl) and (not opts.joinmap) and (not opts.mstmap):
+        eprint("ERROR: add at least one output format option.")
         sys.exit(1)
 
-    print('Done!')
+    if opts.mstmap:
+        if not opts.mstmap_pop_type:
+            eprint("ERROR: please choose population type for mstmap format.")
+            sys.exit(1)
+        if not (opts.mstmap_pop_type.startswith('RIL') or opts.mstmap_pop_type == 'DH'):
+            eprint('ERROR: only RILd and DH supported in MSTmap')
+            sys.exit(1)
+        
+        opf = inputmatrix.rsplit(".", 1)[0]+'.mstmap'  # output file
+        if Path(opf).exists():
+            eprint("ERROR: Filename collision. The future output file `{}` exists".format(opf))
+            sys.exit(1)
 
+        df = pd.read_csv(inputmatrix, delim_whitespace=True)
+        cols = list(df.columns[2:])
+        cols.insert(0, 'locus_name')
+        df['locus_name'] = df.iloc[:,0].astype('str') + '_' +df.iloc[:,1].astype('str')
+        df = df[cols]
+        print(df.head())
+        snp_num, sm_num = df.shape[0], df.shape[1]-1
+        f1 = open(opf, 'w')
+        f1.write(mst_header.format(opts.mstmap_pop_type, opts.population_name, opts.distance_function, opts.cut_off_p_value, \
+            opts.no_map_dist, opts.no_map_size, opts.missing_threshold, opts.estimation_before_clustering, opts.detect_bad_data, \
+            opts.objective_function, snp_num, sm_num))
+        f1.close()
 
-    f1 = open(outputfile+'.MSTMap', 'w')
-    info = 'population_type <para1>\npopulation_name <para2>\n\
-distance_function <para3>\ncut_off_p_value <para4>\n\
-no_map_dist <para5>\nno_map_size <para6>\n\
-missing_threshold <para7>\nestimation_before_clustering <para8>\n\
-detect_bad_data <para9>\nobjective_function <para10>\n\
-number_of_loci <para11>\nnumber_of_individual <para12>\n\n'
-    f1.write(info)
-    f1.write(first_line)
-    for loc, gp in zip(loci_ls, reversed_ls):
-        gpline = '\t'.join(gp)+'\n'
-        f1.write(loc+'\t'+gpline)
-    f1.close()
-    print('\nThe file for MSTMap has been generated.\n\
-If you use MSTMap to construct genetic map, please add your own MSTMap parameters in the file.')
-    f2 = open(outputfile+'.joinmap', 'w')
-    fir_ls = first_line.split()
-    new_firline = fir_ls[0]+'\t'+'Classification\t'+'\t'.join(fir_ls[1:])+'\n'
-    f2.write(new_firline)
-    lines = len(loci_ls)
-    second_column = ['(%s,%s,%s)'%(gt_zeze,gt_zeon,gt_onon)]*lines
-    for loc, cl, gp in zip(loci_ls, second_column, reversed_ls):
-        gpline = '\t'.join(gp)+'\n'
-        f2.write(loc+'\t'+cl+'\t'+gpline)
-    f2.close()
-    print('\nThe file for Joinmap has been generated.\n\
-If you use joinmap to construct genetic map, please loading to Joinmap by copying and pasting from Excel.')
-    f3 = open(outputfile+'.rqtl.csv','w')
-    new_firstline = 'id,'+','.join(loci_ls)+'\n'
-    second_line = ',1'*lines+'\n'
-    f3.write(new_firstline)
-    f3.write(second_line)
-    first_column = first_line.split()[1:]
-    for id, gp in zip(first_column, corrected_ls):
-        gpline = ','.join(gp)+'\n'
-        f3.write(id+','+gpline)
-    f3.close()
-    print('\nThe csv file for R/qtl has been generated.')
+        df.to_csv(opf, sep='\t', index=False, mode='a')
+        print('Done, check file {}!'.format(opf))
+    
+    if opts.joinmap:
+        opf = inputmatrix.rsplit(".", 1)[0]+'.joinmap.xlsx'  # output file
+        if Path(opf).exists():
+            eprint("ERROR: Filename collision. The future output file `{}` exists".format(opf))
+            sys.exit(1)
+
+        df = pd.read_csv(inputmatrix, delim_whitespace=True)
+        need_reps, reps = [], []
+        if opts.homo1 != 'a': 
+            need_reps.append(opts.homo1)
+            reps.append('a')
+        if opts.homo2 != 'b': 
+            need_reps.append(opts.homo2)
+            reps.append('b')
+        if opts.hete != 'h': 
+            need_reps.append(opts.hete)
+            reps.append('h')
+        if opts.missing != '-': 
+            need_reps.append(opts.missing)
+            reps.append('-')
+        if need_reps:
+            df = df.replace(need_reps, reps)
+
+        cols = list(df.columns[2:])
+        cols.insert(0, 'Classification')
+        cols.insert(0, 'locus_name')
+        df['locus_name'] = df.iloc[:,0].astype('str') + '_' +df.iloc[:,1].astype('str')
+        df['Classification'] = '(a,h,b)'
+        df = df[cols]
+        df.to_excel(opf)
+        print('Done! Now you can load the genotype data into the JoinMap project from the MS-Excel spreadsheet {} to a dataset node.'.format(opf))
+
+    if opts.rqtl:
+        opf = inputmatrix.rsplit(".", 1)[0]+'.rqtl.csv'  # output file
+        if Path(opf).exists():
+            eprint("ERROR: Filename collision. The future output file `{}` exists".format(opf))
+            sys.exit(1)
+
+        df = pd.read_csv(inputmatrix, delim_whitespace=True)
+        need_reps, reps = [], []
+        if opts.homo1 != 'A': 
+            need_reps.append(opts.homo1)
+            reps.append('A')
+        if opts.homo2 != 'B': 
+            need_reps.append(opts.homo2)
+            reps.append('B')
+        if opts.hete != 'H': 
+            need_reps.append(opts.hete)
+            reps.append('H')
+        if opts.missing != '-': 
+            need_reps.append(opts.missing)
+            reps.append('-')
+        if need_reps:
+            df = df.replace(need_reps, reps)
+
+        cols = list(df.columns[2:])
+        cols.insert(0, 'id')
+        df['id'] = df.iloc[:,0].astype('str') + '_' +df.iloc[:,1].astype('str')
+        df = df[cols]
+
+        df.loc[-1] = 1
+        df.index = df.index + 1
+        df = df.sort_index()
+        df.iloc[0,0] = np.nan
+        df.to_csv(opf, index=False, na_rep='')
+        print('Done, check file {}!'.format(opf))
 
 def main():
     actions = (
