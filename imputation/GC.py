@@ -14,7 +14,7 @@ from scipy.stats import binom, chisquare
 from pathlib import Path
 from collections import defaultdict, Counter
 from JamesLab import __version__ as version
-from JamesLab.apps.Tools import getChunk, eprint, random_alternative, get_blocks, sort_merge_sort
+from JamesLab.apps.Tools import getChunk, eprint, random_alternative, get_blocks, sort_merge_sort, bin_markers
 from JamesLab.apps.base import OptionParser, OptionGroup, ActionDispatcher, SUPPRESS_HELP
 try: 
     from ConfigParser import ConfigParser
@@ -769,13 +769,72 @@ def format(args):
         df.to_csv(opf, index=False, na_rep='')
         print('Done, check file {}!'.format(opf))
 
+def bin(args):
+    """
+    %prog bin corrected.matrix output.matrix
+
+    compress markers byy merging consecutive markers with same genotypes
+    """
+    p = OptionParser(bin.__doc__)
+    p.add_option("-i", "--input", help=SUPPRESS_HELP)
+    p.add_option("-o", "--output", help=SUPPRESS_HELP)
+    p.add_option('--diff_num', default=0, type='int',
+        help='number of different genotypes between two consecutive markers less than or equal to this value will be merged. \
+        missing values will not be counted.')
+    p.add_option('--missing', default='-',
+        help='character for missing value in genotype matrix file')
+    p.add_option("--logfile", default='GC.bin.log',
+        help="specify the file saving running info")
+    opts, args = p.parse_args(args)
+    if len(args) != 2:
+        sys.exit(not p.print_help())
+
+    inmap, outmap = args
+    inputmatrix = opts.input or inmap
+    outputmatrix = opts.output or outmap
+    
+    if Path(outputmatrix).exists():
+        eprint("ERROR: Filename collision. The future output file `{}` exists".format(outputmatrix))
+        sys.exit(1)
+    
+    chr_order, chr_nums = getChunk(inputmatrix)
+    map_reader = pd.read_csv(inputmatrix, delim_whitespace=True, index_col=[0, 1],  iterator=True)
+    Good_SNPs = []
+    binning_info = []
+    for chrom in chr_order:
+        print('{}...'.format(chrom))
+        chunk = chr_nums[chrom]
+        df_chr_tmp = map_reader.get_chunk(chunk)
+        represent_idx, block_idx, results = bin_markers(df_chr_tmp.loc[chrom], diff=opts.diff_num, missing_value=opts.missing)
+        good_snp = df_chr_tmp.loc[(chrom, results), :]
+        Good_SNPs.append(good_snp)
+        if represent_idx:
+            df_binning_info = pd.DataFrame(dict(zip(['chr', 'representative_marker', 'markers'], [chrom, represent_idx, block_idx])))
+            binning_info.append(df_binning_info)
+
+    df1 = pd.concat(Good_SNPs)
+    df1.to_csv(outputmatrix, sep='\t', index=True)
+    before_snp_num = sum(chr_nums.values())
+    after_snp_num = df1.shape[0]
+    pct = after_snp_num/float(before_snp_num)*100
+    print('{} SNP markers before compression.'.format(before_snp_num))
+    print('{}({:.1f}%) markers left after compression.'.format(after_snp_num, pct))
+
+    if binning_info:
+        df2 = pd.concat(binning_info)
+        df2.to_csv(opts.logfile, sep='\t', index=False)
+        print('Check {} for binning details.'.format(opts.logfile))
+
+
+
+
 def main():
     actions = (
         ('qc_missing', 'quality control of the missing gneotypes'),
         ('qc_sd', 'quality control on segregation distortions'),
         ('qc_hetero', 'quality control on the continuous same homozygous in heterozygous region'),
         ('correct', 'correct wrong genotype calls'),
-        ('compress', 'correct wrong genotype calls'),
+        ('bin', 'merge consecutive markers with same genotypes'),
         ('cleanup', 'clean redundant info in the tmp matirx file'),
         ('format', 'convert genotype matix file to other formats for the genetic map construction'),
             )

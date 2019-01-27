@@ -8,6 +8,49 @@ from scipy.stats import linregress
 from collections import defaultdict
 from sklearn.metrics import mean_squared_error
 
+def bin_markers(df, diff=0, missing_value='-'):
+    """
+    merge consecutive markers with same genotypes
+    return slelected row index
+    Examples:
+    """
+    df = df.replace(missing_value, np.nan)
+    first_row = df.iloc[0,:]
+    temp = [df.index[0]] # save temp index
+    pre_row = first_row 
+    df_rest = df.iloc[1:,:]
+    result_ids = []
+    for idx, row in df_rest.iterrows():
+        df_tmp = pd.concat([pre_row, row], axis=1).dropna()
+        diff_num = (df_tmp.iloc[:,0] != df_tmp.iloc[:,1]).sum()
+        if diff_num <= diff:
+            temp.append(idx)
+        else:
+            if len(temp) > 1:
+                result_ids.append(temp)
+            else:
+                result_ids.append([idx])
+            temp = [idx]
+        pre_row = row
+    if result_ids[0][0] != df.index[0]:
+        result_ids.insert(0, [df.index[0]])
+
+    results = []
+    represent_idx, block_idx = [], []
+    for index in result_ids:
+        if len(index) > 1:
+            df_tmp = df.loc[index, :]
+            good_idx = df_tmp.isnull().sum(axis=1).idxmin()
+            results.append(good_idx)
+            represent_idx.append(good_idx)
+            block_idx.append(index)
+        else:
+            results.append(index[0])
+    return represent_idx, block_idx, results
+
+
+
+
 def sort_merge_sort(arrays):
     """
     get redundant lists by merging lists with overlaping region.
