@@ -590,6 +590,73 @@ def cleanup(args):
     df.applymap(lambda x: x.split('(')[0]).to_csv(outputmatrix, sep='\t', index=True)
     print('Done!')
 
+def format(args):
+   """
+    %prog format corrected.matrix 
+
+    convert corrected genotype matix file to other formats(mstmap, joinmap, r/qtl) for the genetic map constructions
+    """
+    p = OptionParser(cleanup.__doc__)
+    p.add_option("-i", "--input", help=SUPPRESS_HELP)
+    p.add_option("--rqtl",  default=False, action="store_true",
+                help = 'convert to R/qtl format')
+    p.add_option("--joinmap",  default=False, action="store_true",
+                help = 'convert to JoinMap format')
+    p.add_option("--mstmap",  default=False, action="store_true",
+                help = 'convert to MSTmap format')
+    opts, args = p.parse_args(args)
+    if len(args) != 2:
+        sys.exit(not p.print_help())
+
+    inmap = args
+    inputmatrix = opts.input or inmap
+
+    if (not opts.rqtl) and (not opts.joinmap) and (opts.mstmap):
+        eprint("ERROR: add at least one format option.")
+        sys.exit(1)
+
+    print('Done!')
+
+
+    f1 = open(outputfile+'.MSTMap', 'w')
+    info = 'population_type <para1>\npopulation_name <para2>\n\
+distance_function <para3>\ncut_off_p_value <para4>\n\
+no_map_dist <para5>\nno_map_size <para6>\n\
+missing_threshold <para7>\nestimation_before_clustering <para8>\n\
+detect_bad_data <para9>\nobjective_function <para10>\n\
+number_of_loci <para11>\nnumber_of_individual <para12>\n\n'
+    f1.write(info)
+    f1.write(first_line)
+    for loc, gp in zip(loci_ls, reversed_ls):
+        gpline = '\t'.join(gp)+'\n'
+        f1.write(loc+'\t'+gpline)
+    f1.close()
+    print('\nThe file for MSTMap has been generated.\n\
+If you use MSTMap to construct genetic map, please add your own MSTMap parameters in the file.')
+    f2 = open(outputfile+'.joinmap', 'w')
+    fir_ls = first_line.split()
+    new_firline = fir_ls[0]+'\t'+'Classification\t'+'\t'.join(fir_ls[1:])+'\n'
+    f2.write(new_firline)
+    lines = len(loci_ls)
+    second_column = ['(%s,%s,%s)'%(gt_zeze,gt_zeon,gt_onon)]*lines
+    for loc, cl, gp in zip(loci_ls, second_column, reversed_ls):
+        gpline = '\t'.join(gp)+'\n'
+        f2.write(loc+'\t'+cl+'\t'+gpline)
+    f2.close()
+    print('\nThe file for Joinmap has been generated.\n\
+If you use joinmap to construct genetic map, please loading to Joinmap by copying and pasting from Excel.')
+    f3 = open(outputfile+'.rqtl.csv','w')
+    new_firstline = 'id,'+','.join(loci_ls)+'\n'
+    second_line = ',1'*lines+'\n'
+    f3.write(new_firstline)
+    f3.write(second_line)
+    first_column = first_line.split()[1:]
+    for id, gp in zip(first_column, corrected_ls):
+        gpline = ','.join(gp)+'\n'
+        f3.write(id+','+gpline)
+    f3.close()
+    print('\nThe csv file for R/qtl has been generated.')
+
 def main():
     actions = (
         ('qc_missing', 'quality control of the missing gneotypes'),
