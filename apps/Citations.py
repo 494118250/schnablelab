@@ -6,7 +6,7 @@ estimate dependent citations
 
 import os.path as op
 import sys
-from JamesLab.apps.base import ActionDispatcher, OptionParser
+from schnablelab.apps.base import ActionDispatcher, OptionParser
 import pandas as pd
 
 def main():

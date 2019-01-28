@@ -8,10 +8,10 @@ www.cnblogs.com/freemao/p/7076127.html
 
 import os.path as op
 import sys
-from JamesLab.apps.base import ActionDispatcher, OptionParser, glob, iglob
-from JamesLab.apps.natsort import natsorted
+from schnablelab.apps.base import ActionDispatcher, OptionParser, glob, iglob
+from schnablelab.apps.natsort import natsorted
 import subprocess
-from JamesLab.apps.header import Slurm_header
+from schnablelab.apps.header import Slurm_header
 
 # the location of linkimpute, beagle executable
 lkipt = op.abspath(op.dirname(__file__)) + '/../apps/LinkImpute.jar'

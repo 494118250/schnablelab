@@ -9,10 +9,10 @@ import glob
 import sys
 import pandas as pd
 from optparse import OptionParser as OptionP, OptionGroup, SUPPRESS_HELP
-from JamesLab import __copyright__, __version__
-from JamesLab.apps.natsort import natsorted
+from schnablelab import __copyright__, __version__
+from schnablelab.apps.natsort import natsorted
 
-JSHELP = "JamesLab utility libraries v%s [%s]\n" % (__version__, __copyright__)
+JSHELP = "schnablelab utility libraries v%s [%s]\n" % (__version__, __copyright__)
 
 try:
     basestring
@@ -40,7 +40,7 @@ class ActionDispatcher(object):
     def get_meta(self):
         args = splitall(sys.argv[0])[-3:]
         args[-1] = args[-1].replace(".py", "")
-        if args[-2] == "JamesLab":
+        if args[-2] == "schnablelab":
             meta = "MODULE"
         elif args[-1] == "__main__":
             meta = "SCRIPT"

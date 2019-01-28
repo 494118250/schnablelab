@@ -14,9 +14,9 @@ import pickle
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from PIL import Image
-from JamesLab.apps.base import cutlist, ActionDispatcher, OptionParser, glob
-from JamesLab.apps.header import Slurm_header, Slurm_gpu_header
-from JamesLab.apps.natsort import natsorted
+from schnablelab.apps.base import cutlist, ActionDispatcher, OptionParser, glob
+from schnablelab.apps.header import Slurm_header, Slurm_gpu_header
+from schnablelab.apps.natsort import natsorted
 from glob import glob
 from pathlib import Path
 
@@ -71,7 +71,7 @@ def Imgs2ArrsBatch(args):
     pattern, = args
     all_dirs = [i for i in glob(pattern) if os.path.isdir(i)]
     for i in all_dirs:
-        cmd = 'python -m JamesLab.CNN.Predict Imgs2Arrs %s\n'%i
+        cmd = 'python -m schnablelab.CNN.Predict Imgs2Arrs %s\n'%i
         jobname = i+'.img2npy'
         header = Slurm_header%(opts.time, opts.memory, jobname, jobname, jobname)
         #header += "ml anaconda\nsource activate MCY\n"
@@ -142,7 +142,7 @@ def PredictSlurmCPU(args):
         st, ed = gn.split('-')
         ed = int(ed)+1
         gn = '%s-%s'%(st, ed)
-        cmd = "python -m JamesLab.CNN.Predict Predict %s '%s' %s\n"%(mn, npy_pattern, gn)
+        cmd = "python -m schnablelab.CNN.Predict Predict %s '%s' %s\n"%(mn, npy_pattern, gn)
         opt = '%s.%s'%(opts.prefix, gn)
         header = Slurm_header%(opts.time, opt, opt, opt, opt)
         header += "ml anaconda\nsource activate Py3KerasTensorCPU\n"
@@ -173,7 +173,7 @@ def PredictSlurmGPU(args):
         st, ed = gn.split('-')
         ed = int(ed)+1
         gn = '%s-%s'%(st, ed)
-        cmd = "python -m JamesLab.CNN.Predict Predict %s '%s' %s\n"%(mn, npy_pattern, gn)
+        cmd = "python -m schnablelab.CNN.Predict Predict %s '%s' %s\n"%(mn, npy_pattern, gn)
         opt = '%s.%s'%(opts.prefix, gn)
         header = Slurm_gpu_header%(opts.time, opts.memory, opt, opt, opt)
         header += "ml anaconda\nsource activate MCY\n"

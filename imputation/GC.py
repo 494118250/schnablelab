@@ -13,9 +13,9 @@ import numpy as np
 from scipy.stats import binom, chisquare
 from pathlib import Path
 from collections import defaultdict, Counter
-from JamesLab import __version__ as version
-from JamesLab.apps.Tools import getChunk, eprint, random_alternative, get_blocks, sort_merge_sort, bin_markers
-from JamesLab.apps.base import OptionParser, OptionGroup, ActionDispatcher, SUPPRESS_HELP
+from schnablelab import __version__ as version
+from schnablelab.apps.Tools import getChunk, eprint, random_alternative, get_blocks, sort_merge_sort, bin_markers
+from schnablelab.apps.base import OptionParser, OptionGroup, ActionDispatcher, SUPPRESS_HELP
 try: 
     from ConfigParser import ConfigParser
 except ModuleNotFoundError:
@@ -243,8 +243,7 @@ def correct(args):
     """
     %prog correct config.txt input.matrix 
 
-    Correct wrong genotype calls and impute missing values in `input.matrix` using sliding
-    window method with parameters defined in `config.txt`.
+    Correct wrong genotype calls and impute missing values in biparental populations
     """
     p = OptionParser(correct.__doc__)
     p.add_option("-c", "--configfile", help=SUPPRESS_HELP)
@@ -610,7 +609,10 @@ def format(args):
     """
     %prog format corrected.matrix 
 
-    convert corrected genotype matix file to other formats(mstmap, joinmap, r/qtl) for the genetic map constructions
+    convert corrected genotype matrix file to other formats(mstmap, joinmap, r/qtl) for the genetic mapping software.
+    Example:
+    `python -m schnablelab.imputation.GC format test.map --mstmap --mstmap_pop_type RIL2`
+    will generate `test.mstmap` for MSTmap use.
     """
     p = OptionParser(format.__doc__)
     p.add_option("-i", "--input", help=SUPPRESS_HELP)

@@ -14,9 +14,9 @@ import pickle
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from PIL import Image
-from JamesLab.apps.base import ActionDispatcher, OptionParser, glob
-from JamesLab.apps.header import Slurm_header, Slurm_gpu_constraint_header, Slurm_gpu_header
-from JamesLab.apps.natsort import natsorted
+from schnablelab.apps.base import ActionDispatcher, OptionParser, glob
+from schnablelab.apps.header import Slurm_header, Slurm_gpu_constraint_header, Slurm_gpu_header
+from schnablelab.apps.natsort import natsorted
 from glob import glob
 from PIL import Image
 import cv2
@@ -47,7 +47,7 @@ def Predict_dpp(args):
         else Slurm_gpu_header%(opts.time, opts.memory, otp, otp, otp)
     if opts.env:
         header += 'ml anaconda \nsource activate %s\n'%opts.env
-    cmd = "python -m JamesLab.CNN.CNN_LeafCount_Predict %s %s %s.csv\n"%(model_dir, img_dir, otp)
+    cmd = "python -m schnablelab.CNN.CNN_LeafCount_Predict %s %s %s.csv\n"%(model_dir, img_dir, otp)
     header += cmd
     f0 = open('%s.slurm'%otp, 'w')
     f0.write(header)

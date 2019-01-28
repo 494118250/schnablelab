@@ -6,10 +6,10 @@ Generate the R script file and the slurm job file for performing FarmCPU. Find m
 
 import os.path as op
 import sys
-from JamesLab.apps.base import ActionDispatcher, OptionParser
-from JamesLab.apps.header import Slurm_header
-from JamesLab.apps.header import FarmCPU_header
-from JamesLab.apps.natsort import natsorted
+from schnablelab.apps.base import ActionDispatcher, OptionParser
+from schnablelab.apps.header import Slurm_header
+from schnablelab.apps.header import FarmCPU_header
+from schnablelab.apps.natsort import natsorted
 
 def main():
     actions = (

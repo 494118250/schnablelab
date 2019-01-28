@@ -8,9 +8,9 @@ Find more details at HCC document:
 
 import os.path as op
 import sys
-from JamesLab.apps.base import ActionDispatcher, OptionParser, glob,iglob
-from JamesLab.apps.natsort import natsorted
-from JamesLab.apps.header import Slurm_header
+from schnablelab.apps.base import ActionDispatcher, OptionParser, glob,iglob
+from schnablelab.apps.natsort import natsorted
+from schnablelab.apps.header import Slurm_header
 from subprocess import call
 from subprocess import Popen
 import subprocess

@@ -4,8 +4,8 @@ import pandas as pd
 from pathlib import Path
 import scipy.misc
 import sys
-#sys.path.append('/home/schnablelab/cmiao/MyRepo/JamesLab/apps')
-from JamesLab.apps.DirDataframe import GenDirDataframe
+#sys.path.append('/home/schnablelab/cmiao/MyRepo/schnablelab/apps')
+from schnablelab.apps.DirDataframe import GenDirDataframe
 import os
 
 check_path = Path('/work/schnablelab/cmiao/TimeSeriesGWAS/High_throughput_Phenotyping/Experiment2/HyperImages/CheckZoomLevel')

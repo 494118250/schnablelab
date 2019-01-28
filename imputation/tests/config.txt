@@ -1,6 +1,6 @@
 [Section1]
 #choose your population type, F2 or RIL
-Population_type: F2
+Population_type: RIL
 
 [Section2]
 #the character used for homozygous genotype
@@ -23,5 +23,5 @@ error_rate_for_homo1: 0.03
 error_rate_for_homo2: 0.01
 
 [Section4]
-#choose the size of the sliding window (must be odd numbers)
-Sliding_window_size :15
+#lenght of the sliding window (must be odd numbers)
+Sliding_window_size: 15

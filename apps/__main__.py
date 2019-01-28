@@ -3,7 +3,7 @@
 Miscellany of wrapper scripts for command-line bioinformatics tools, public data downloaders and other generic routines.
 """
 
-from JamesLab.apps.base import dmain
+from schnablelab.apps.base import dmain
 
 
 if __name__ == '__main__':

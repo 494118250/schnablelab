@@ -10,10 +10,10 @@ import pandas as pd
 import os.path as op
 import sys
 from subprocess import call
-from JamesLab.apps.base import ActionDispatcher, OptionParser, glob,iglob
-from JamesLab.apps.natsort import natsorted
+from schnablelab.apps.base import ActionDispatcher, OptionParser, glob,iglob
+from schnablelab.apps.natsort import natsorted
 import subprocess
-from JamesLab.apps.header import Slurm_header
+from schnablelab.apps.header import Slurm_header
 
 def main():
     actions = (

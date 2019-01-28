@@ -2,7 +2,7 @@
 require personal terminal used for computation
 """
 import sys
-from JamesLab.apps.base import ActionDispatcher, OptionParser
+from schnablelab.apps.base import ActionDispatcher, OptionParser
 from subprocess import call
 
 def main():

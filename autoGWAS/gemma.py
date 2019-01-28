@@ -6,9 +6,9 @@ Run GEMMA command or generate the coresponding slurm job file. Find details in G
 
 import os.path as op
 import sys
-from JamesLab.apps.base import ActionDispatcher, OptionParser
-from JamesLab.apps.header import Slurm_header
-from JamesLab.apps.natsort import natsorted
+from schnablelab.apps.base import ActionDispatcher, OptionParser
+from schnablelab.apps.header import Slurm_header
+from schnablelab.apps.natsort import natsorted
 
 # the location of gemma executable file
 gemma = op.abspath(op.dirname(__file__))+'/../apps/gemma'

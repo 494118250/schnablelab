@@ -7,12 +7,12 @@ Crop RGB images from LemnaTec based on zoom levels using magick.
 import os.path as op
 from pathlib import Path
 import sys
-from JamesLab.apps.base import ActionDispatcher, OptionParser, glob, cutlist
-from JamesLab.apps.natsort import natsorted
+from schnablelab.apps.base import ActionDispatcher, OptionParser, glob, cutlist
+from schnablelab.apps.natsort import natsorted
 from subprocess import call
 from subprocess import Popen
 import re
-from JamesLab.apps.header import Slurm_header
+from schnablelab.apps.header import Slurm_header
 import cv2
 import numpy as np
 import pandas as pd
@@ -106,9 +106,9 @@ def PlantHullBatch(args):
     for img in all_imgs:
         imgpath = Path(img)
         outpre = str(imgpath.stem)
-        cmd = 'python -m JamesLab.ImgPros.Preprocess PlantHull %s --crop True --segmentation True --border 80,10,10,10\n' % (img) \
+        cmd = 'python -m schnablelab.ImgPros.Preprocess PlantHull %s --crop True --segmentation True --border 80,10,10,10\n' % (img) \
             if opts.mode=='real' \
-            else 'python -m JamesLab.ImgPros.Preprocess PlantHull %s --border 0,40,10,0 --thresh_cutoff 160\n' % (img)
+            else 'python -m schnablelab.ImgPros.Preprocess PlantHull %s --border 0,40,10,0 --thresh_cutoff 160\n' % (img)
         print(cmd)
         all_cmds.append(cmd)
     grps = cutlist(all_cmds, int(jobn))

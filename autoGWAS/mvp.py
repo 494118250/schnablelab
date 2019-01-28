@@ -5,10 +5,10 @@ Generate MVP slurm job file. Find more details about MVP at <https://github.com/
 
 import os.path as op
 import sys
-from JamesLab.apps.base import ActionDispatcher, OptionParser
-from JamesLab.apps.header import Slurm_header
-from JamesLab.apps.header import MVP_Data_header, MVP_Run_header
-from JamesLab.apps.natsort import natsorted
+from schnablelab.apps.base import ActionDispatcher, OptionParser
+from schnablelab.apps.header import Slurm_header
+from schnablelab.apps.header import MVP_Data_header, MVP_Run_header
+from schnablelab.apps.natsort import natsorted
 
 
 def main():

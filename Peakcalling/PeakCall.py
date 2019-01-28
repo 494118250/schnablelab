@@ -9,8 +9,8 @@ import os.path as op
 import sys
 import pandas as pd
 import numpy as np
-from JamesLab.apps.base import ActionDispatcher, OptionParser
-from JamesLab.apps.header import Slurm_header
+from schnablelab.apps.base import ActionDispatcher, OptionParser
+from schnablelab.apps.header import Slurm_header
 from subprocess import call
 
 def main():

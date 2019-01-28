@@ -5,9 +5,9 @@ generate slurm files for machine learning jobs.
 """
 import os.path as op
 import sys
-from JamesLab.apps.base import ActionDispatcher, OptionParser
-from JamesLab.apps.header import Slurm_header, Slurm_gpu_header
-from JamesLab.apps.natsort import natsorted
+from schnablelab.apps.base import ActionDispatcher, OptionParser
+from schnablelab.apps.header import Slurm_header, Slurm_gpu_header
+from schnablelab.apps.natsort import natsorted
 from numpy.random import uniform
 from pathlib import Path
 
@@ -39,7 +39,7 @@ def LeafCounts(args):
     if len(args) == 0:
         sys.exit(not p.print_help())
     train_dir, label_fn, model_name, = args
-    cmd = 'python -m JamesLab.CNN.CNN_LeafCount %s %s %s %s %s'%(train_dir, label_fn, model_name, opts.epc, opts.tensorboard)
+    cmd = 'python -m schnablelab.CNN.CNN_LeafCount %s %s %s %s %s'%(train_dir, label_fn, model_name, opts.epc, opts.tensorboard)
     SlurmHeader = Slurm_gpu_header%(opts.time, opts.memory, opts.prefix, opts.prefix, opts.prefix)
     SlurmHeader += 'module load anaconda\n'
     SlurmHeader += 'source activate MCY\n'

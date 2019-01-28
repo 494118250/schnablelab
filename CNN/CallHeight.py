@@ -17,10 +17,10 @@ import matplotlib.pyplot as plt
 from matplotlib import rcParams
 from PIL import Image
 from math import hypot
-from JamesLab.apps.natsort import natsorted
-from JamesLab.apps.header import Slurm_header
+from schnablelab.apps.natsort import natsorted
+from schnablelab.apps.header import Slurm_header
 from sklearn.linear_model import LinearRegression
-from JamesLab.apps.base import ActionDispatcher, OptionParser, glob
+from schnablelab.apps.base import ActionDispatcher, OptionParser, glob
 import datetime
 from dateutil import parser
 from pathlib import Path
@@ -230,7 +230,7 @@ def PolishBatch(args):
     for i in all_pngs:
         out_prefix = i.split('/')[-1].split('.png')[0]
         jobname = out_prefix + '.polish'
-        cmd = 'python -m JamesLab.CNN.CallHeight Polish %s %s\n'%(i, out_prefix)
+        cmd = 'python -m schnablelab.CNN.CallHeight Polish %s %s\n'%(i, out_prefix)
         header = Slurm_header%(opts.time, opts.memory, jobname, jobname, jobname)
         header += "ml anaconda\nsource activate %s\n"%opts.env
         header += cmd
@@ -312,7 +312,7 @@ def CallHeightBatch(args):
     for i in all_pngs:
         out_prefix = i.split('/')[-1].split('.polish.png')[0]
         jobname = out_prefix + '.Height'
-        cmd = 'python -m JamesLab.CNN.CallHeight CallHeight %s %s\n'%(i, out_prefix)
+        cmd = 'python -m schnablelab.CNN.CallHeight CallHeight %s %s\n'%(i, out_prefix)
         header = Slurm_header%(opts.time, opts.memory, jobname, jobname, jobname)
         header += "ml anaconda\nsource activate %s\n"%opts.env
         header += cmd

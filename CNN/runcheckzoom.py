@@ -1,12 +1,12 @@
-from JamesLab.apps.header import Slurm_header
+from schnablelab.apps.header import Slurm_header
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 from pathlib import Path
 import scipy.misc
 import sys
-#sys.path.append('/home/schnablelab/cmiao/MyRepo/JamesLab/apps')
-from JamesLab.apps.DirDataframe import GenDirDataframe
+#sys.path.append('/home/schnablelab/cmiao/MyRepo/schnablelab/apps')
+from schnablelab.apps.DirDataframe import GenDirDataframe
 import os
 
 check_path = Path('/work/schnablelab/cmiao/TimeSeriesGWAS/High_throughput_Phenotyping/Experiment2/HyperImages/CheckZoomLevel')
@@ -18,7 +18,7 @@ df1 = df.sort_values(['date','sm']).reset_index(drop=True)
 counts = df1['date'].value_counts().sort_index()
 
 for i in counts.index.tolist():
-    cmd = 'python /home/schnablelab/cmiao/MyRepo/JamesLab/CNN/checkZoom.py %s'%i
+    cmd = 'python /home/schnablelab/cmiao/MyRepo/schnablelab/CNN/checkZoom.py %s'%i
     print(cmd)
     header = Slurm_header%(2, 10000, i, i, i)
     header += "ml anaconda\nsource activate MCY\n"

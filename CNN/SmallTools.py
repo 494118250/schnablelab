@@ -6,9 +6,9 @@ import pandas as pd
 from pathlib import Path
 import os.path as op
 import sys
-from JamesLab.apps.base import ActionDispatcher, OptionParser
-from JamesLab.apps.header import Slurm_header, Slurm_gpu_header
-from JamesLab.apps.Tools import GenDataFrameFromPath
+from schnablelab.apps.base import ActionDispatcher, OptionParser
+from schnablelab.apps.header import Slurm_header, Slurm_gpu_header
+from schnablelab.apps.Tools import GenDataFrameFromPath
 import matplotlib.pyplot as plt
 from sklearn.metrics import mean_squared_error
 import numpy as np

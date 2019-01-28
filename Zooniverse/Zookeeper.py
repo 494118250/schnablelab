@@ -1,9 +1,9 @@
 '''
-JamesLab CLI tool
+schnablelab CLI tool
 Calls Zookeeper class
 '''
 
-from JamesLab.apps.base import ActionDispatcher, OptionParser
+from schnablelab.apps.base import ActionDispatcher, OptionParser
 import sys
 
 def main():
@@ -28,7 +28,7 @@ def upload(args):
         project. If there is no manifest will generate one.
     '''
 
-    from JamesLab.Zooniverse.Zootils import upload as load
+    from schnablelab.Zooniverse.Zootils import upload as load
 
     p = OptionParser(upload.__doc__)
     p.add_option('-s', '--subject', default=False,
@@ -67,7 +67,7 @@ def export(args):
     DESC: Fetches an export from the specified zooniverse project id.
     '''
 
-    from JamesLab.Zooniverse.Zootils import export as exp
+    from schnablelab.Zooniverse.Zootils import export as exp
 
     p = OptionParser(export.__doc__)
     p.add_option('-t', '--type', default='classifications',
@@ -93,7 +93,7 @@ def manifest(args):
 
     DESC: Generates a manifest inside the specified image directory.
     '''
-    from JamesLab.Zooniverse.Zootils import manifest as mani
+    from schnablelab.Zooniverse.Zootils import manifest as mani
 
     p = OptionParser(manifest.__doc__)
     opts, args = p.parse_args(args)
