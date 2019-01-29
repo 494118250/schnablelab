@@ -8,18 +8,18 @@ from subprocess import call
 def main():
 
     actions = (
-        ('request_cpu', 'request cpu node'),
-        ('request_gpu', 'request gpu node'),
+        ('cpu', 'request cpu node'),
+        ('gpu', 'request gpu node'),
             )
     p = ActionDispatcher(actions)
     p.dispatch(globals())
 
-def request_cpu(args):
+def cpu(args):
     """
     %prog  
     request a cpu node from hcc.
     """
-    p = OptionParser(request_cpu.__doc__)
+    p = OptionParser(cpu.__doc__)
     p.add_option("--partition", default="jclarke", choices=('batch', 'jclarke'),
                 help="which partition? [default: %default]")
     p.add_option("--memory", default="10240",
@@ -35,12 +35,12 @@ def request_cpu(args):
     else:
         sys.exit(not p.print_help())
 
-def request_gpu(args):
+def gpu(args):
     """
     %prog
     request a gpu node from hcc.
     """
-    p = OptionParser(request_gpu.__doc__)
+    p = OptionParser(gpu.__doc__)
     p.add_option("--memory", default="12000",
                 help="specify the how much memory [default: %default]")
     p.add_option("--time", default='20',

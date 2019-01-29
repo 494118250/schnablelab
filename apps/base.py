@@ -8,6 +8,7 @@ import os.path as op
 import glob
 import sys
 import pandas as pd
+from schnablelab.apps.Tools import eprint
 from optparse import OptionParser as OptionP, OptionGroup, SUPPRESS_HELP
 from schnablelab import __copyright__, __version__
 from schnablelab.apps.natsort import natsorted
@@ -76,9 +77,9 @@ class ActionDispatcher(object):
             self.print_help()
         action = sys.argv[1]
         if not action in self.valid_actions:
-            print >> sys.stderr, "[error] %s not a valid %s\n" % (action, meta)
+            eprint("[error] %s not a valid %s\n"% (action, meta))
             alt = get_close_matches(action, self.valid_actions)
-            print >> sys.stderr, "Did you mean one of these?\n\t%s\n" % (", ".join(alt))
+            eprint(sys.stderr, "Did you mean one of these?\n\t%s\n" % (", ".join(alt)))
             self.print_help()
         globals[action](sys.argv[2:])
 
@@ -126,18 +127,15 @@ class OptionParser(OptionP):
                     and o.action != "store_false":
                 o.help += " [default: %s]" % default_tag
 
-    def set_slurm_opts(self, jn=None, gpu=None, env=None):
+    def set_slurm_opts(self, jn=None, gpu=None):
         group = OptionGroup(self, 'Slurm job parameters')
-        group.add_option('-t', dest='time', default=1,
+        group.add_option('-t', dest='time', default=160,
                          help='specify time(hour) for slurm header')
         group.add_option('-m', dest='memory', default=10000,
                          help='memory(Mb) for slurm header. schnablelab gpu is k40(12000)')
         if jn:
             group.add_option('-p', dest='prefix', default='myjob',
                              help='prefix of job name and log file')
-        if env:
-            group.add_option('-e', dest='env', choices=['Py3KerasTensorCPU', 'MCY'], 
-                             help='the conda enviroment you need to activate')
         if gpu:
             group.add_option('-g', dest='gpu',
                              help='specify the gpu model(k20,k40,p100). Leave empty for unconstraint.')

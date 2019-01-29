@@ -1,94 +1,112 @@
 # -*- coding: UTF-8 -*-
 
 """
-generate slurm files for machine learning jobs.
+Train CNN for leaf counting, panicle emergence detection, and hyper segmentation
 """
-import os.path as op
+import os
 import sys
+import os.path as op
+
+from pathlib import Path
+from numpy.random import uniform
+from schnablelab.apps.Tools import eprint
+from schnablelab.apps.natsort import natsorted
 from schnablelab.apps.base import ActionDispatcher, OptionParser
 from schnablelab.apps.header import Slurm_header, Slurm_gpu_header
-from schnablelab.apps.natsort import natsorted
-from numpy.random import uniform
-from pathlib import Path
-
-vgg_py = op.abspath(op.dirname(__file__))+'/VGG.py'    
-LNN_py = op.abspath(op.dirname(__file__))+'/LinearClassifer.py'    
 
 def main():
     actions = (
-        ('vgg', 'run vgg model (flowering time)'),
-        ('LeafCounts', 'run dpp model (leaf count)'),
-        ('LinearModel', 'run simple linear neural network (hypestral images)'),        
+        ('keras_cnn', 'train vgg model'),
+        ('keras_snn', 'train simple neural network'),
+        ('dpp', 'train dpp model'),
             )
     p = ActionDispatcher(actions)
     p.dispatch(globals())
 
-def LeafCounts(args):
-    """
-    %prog train_dir label_fn_in_train_dir model_results_dir
+class fns(object):
+    def __init__(self, model_name, tb_dir=None, n=1):
+        self.lrs = [0.001] if n==1 else [10**uniform(-2, -6) for i in range(n)]
+        self.model_name = ['{}_{}'.format(model_name, i) for i in self.lrs]
+        if tb_dir:
+            self.tb_dirs = ['{}_{}'.format(tb_dir, i) for i in self.lrs]
+ 
+def dpp(args):
+    '''
+    %prog training_data_dir label_fn model_results_dir
 
-    Run deep plant phenomics model
-    """
-    p = OptionParser(LeafCounts.__doc__)
-    p.add_option('--tensorboard', default='my_tensorboard',
-        help = 'specify the tensorboard dir name')
-    p.add_option('--epc', default=500,
-        help = 'specify number of epoches. for leaf counting use 500')
-    p.set_slurm_opts(jn=True, gpu=True)
+    Run dpp regression model
+    '''
+    p = OptionParser(dpp.__doc__)
+    p.add_option('--problem_type', default='classification',choices=('classification', 'regression'),
+        help = 'specify your problem type')
+    p.add_option('--tensorboard', default='infer',
+        help = 'tensorboard dir name')
+    p.add_option('--epoch', default=500,
+        help = 'number of epoches. set to 500 for leaf couting problem')
+    p.add_option('--split_ratio', default=0.2,
+        help = 'the ratio of training dataset used for testing')
+    p.add_option('--lr_n', default=1, type='int',
+        help = 'train model with differnt learning rates. if n=1: set lr to 0.001. if n>1: try differnt lr from 1e-2 to 1e-5 n times')
+    p.set_slurm_opts(gpu=True)
     opts, args = p.parse_args(args)
-    if len(args) == 0:
+
+    if len(args) != 3:
         sys.exit(not p.print_help())
-    train_dir, label_fn, model_name, = args
-    cmd = 'python -m schnablelab.CNN.CNN_LeafCount %s %s %s %s %s'%(train_dir, label_fn, model_name, opts.epc, opts.tensorboard)
-    SlurmHeader = Slurm_gpu_header%(opts.time, opts.memory, opts.prefix, opts.prefix, opts.prefix)
-    SlurmHeader += 'module load anaconda\n'
-    SlurmHeader += 'source activate MCY\n'
-    SlurmHeader += cmd
-    f = open('%s.dpp.slurm'%model_name, 'w')
-    f.write(SlurmHeader)
-    f.close()
-    print('slurm file %s.dpp.slurm has been created, now you can sbatch your job file.'%model_name)
 
+    training_dir, label_fn, model_name, = args
+    tb_dir_name = 'tensorboard_{}'.format(model_name) if opts.tensorboard == 'infer' else opts.tensorboard
+    out_fns = fns(model_name, tb_dir=tb_dir_name, n=opts.lr_n)
+    for i in range(opts.lr_n):
+        try:
+            os.mkdir(out_fns.model_name[i])
+        except FileExistsError:
+            eprint("ERROR: Filename collision. The future output file `{}` exists".format(out_fns.model_name[i]))
+            sys.exit(1)
+        cmd = 'python -m schnablelab.CNN.dpp_%s %s %s %s %s %s %s %s'%\
+            (opts.problem_type, training_dir, label_fn, out_fns.model_name[i], out_fns.tb_dirs[i], opts.epoch, opts.split_ratio, out_fns.lrs[i])
+        SlurmHeader = Slurm_gpu_header%(opts.time, opts.memory, out_fns.model_name[i], out_fns.model_name[i], out_fns.model_name[i])
+        SlurmHeader += 'module load anaconda\nsource activate MCY\n'
+        SlurmHeader += cmd
 
-def vgg(args):
+        f = open('%s.slurm'%out_fns.model_name[i], 'w')
+        f.write(SlurmHeader)
+        f.close()
+        print('slurm file %s.slurm has been created, now you can sbatch your job file.'%out_fns.model_name[i]) 
+
+def keras_cnn(args):
     """
     %prog train_dir val_dir num_category model_name_prefix
     
     Run vgg model
     """
-    p = OptionParser(vgg.__doc__)
-    p.add_option('--lr', default=40,
-        help = 'specify number of learing rate to test')
-    p.add_option('--epc', default=50,
-        help = 'specify epoches')
-    p.set_slurm_opts(jn=True, gpu=True)
+    p = OptionParser(keras_cnn.__doc__)
+    p.add_option('--epoch', default=500, help = 'number of epoches')
+    p.add_option('--lr_n', default=1, type='int',
+        help = 'train model with differnt learning rates. if n=1: set lr to 0.001. if n>1: try differnt lr from 1e-2 to 1e-5 n times')
+    p.set_slurm_opts(gpu=True)
     opts, args = p.parse_args(args)
-    if len(args) == 0:
+
+    if len(args) != 4:
         sys.exit(not p.print_help())
+
     train_dir, val_dir, numC, mnp = args #mnp:model name prefix
-    n = 1 
-    for count in range(int(opts.lr)):
-        jobprefix = '%s_%s'%(opts.prefix, n)
-        n += 1
-        lr = 10**uniform(-2, -7)
-        model_name = '%s_%s'%(mnp, lr)
-        vgg_cmd = 'python %s %s %s %s %s %s %s'%(vgg_py, train_dir, val_dir, numC, lr, opts.epc, model_name) 
-        SlurmHeader = Slurm_gpu_header%(opts.time, opts.memory, jobprefix,jobprefix,jobprefix,opts.gpu)
-        SlurmHeader += 'module load anaconda\n'
-        SlurmHeader += 'source activate MCY\n'
-        SlurmHeader += vgg_cmd
-        f = open('%s.vgg.slurm'%model_name, 'w')
+    out_fns = fns(mnp, n=opts.lr_n)
+    for i in range(int(opts.lr_n)):
+        cmd = 'python -m schnablelab.CNN.keras_vgg %s %s %s %s %s %s'%(train_dir, val_dir, numC, out_fns.lrs[i], opts.epoch, out_fns.model_name[i]) 
+        SlurmHeader = Slurm_gpu_header%(opts.time, opts.memory, out_fns.model_name[i], out_fns.model_name[i], out_fns.model_name[i])
+        SlurmHeader += 'module load anaconda\nsource activate MCY\n'
+        SlurmHeader += cmd
+        f = open('%s.slurm'%out_fns.model_name[i], 'w')
         f.write(SlurmHeader)
         f.close()
-        print('slurm file %s.vgg.slurm has been created, you can sbatch your job file.'\
-%model_name)
+        print('slurm file %s.slurm has been created, you can sbatch your job file.'%out_fns.model_name[i])
     
-def LinearModel(args):
+def keras_snn(args):
     """
     %prog np_predictors np_target cpu_or_gpu
     tune model with different parameters
     """
-    p = OptionParser(LinearModel.__doc__)
+    p = OptionParser(keras_snn.__doc__)
     p.add_option('--lr', default=40,
         help = 'specify the number of learing rate in (1e-2, 1e-6)')
     p.add_option('--layer', default='4', choices=['2','3','4'],
@@ -129,6 +147,5 @@ def LinearModel(args):
             f.close()
     print('slurms have been created, you can sbatch your job file.')
 
- 
 if __name__ == "__main__":
     main()

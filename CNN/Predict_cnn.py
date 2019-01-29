@@ -24,18 +24,18 @@ from pathlib import Path
 
 def main():
     actions = (
-        ('Predict_keras', 'using keras model to make prediction'),
-        ('Predict_dpp', 'using dpp model to make prediction'),
+        ('keras', 'using keras model to make prediction'),
+        ('dpp', 'using dpp model to make prediction'),
             )
     p = ActionDispatcher(actions)
     p.dispatch(globals())
 
-def Predict_dpp(args):
+def dpp(args):
     """
     %prog model_dir img_dir output_prefix
     using your trained dpp model to make predictions.
     """
-    p = OptionParser(Predict_dpp.__doc__)
+    p = OptionParser(dpp.__doc__)
     p.set_slurm_opts(jn=True, gpu=True, env=True)
     opts, args = p.parse_args(args)
     if len(args) == 0:
@@ -54,14 +54,14 @@ def Predict_dpp(args):
     f0.close()
     print('%s.slurm generate, you can submit to a gpu node now.'%otp)
 
-def Predict_keras(args):
+def keras(args):
     """
     %prog model_name img_dir target_size output_prefix
     using your trained model to make predictions. Target size is the input_shape when
     you train your model. an invalid target_size example is 224,224,3
     """
     from keras.models import load_model
-    p = OptionParser(Predict_keras.__doc__)
+    p = OptionParser(keras.__doc__)
     p.set_slurm_opts()
     p.add_option('--img_num', default='all',
                  help='specify how many images used for prediction in the dir')

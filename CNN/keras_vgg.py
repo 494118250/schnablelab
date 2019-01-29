@@ -14,7 +14,7 @@ from keras.callbacks import History
 from keras.optimizers import Adam
 from keras.optimizers import SGD
 
-ts = (224,224)
+ts = (256, 256)
 def preprocess(img_dir):
     imgs = []
     all_imgs = glob(img_dir + '/*/*png')
@@ -66,7 +66,7 @@ def train(train_dir, val_dir, Categories, lr, epc, model_name):
       ) 
     print('data well prepared')
     model = Sequential([
-      Conv2D(64, (3, 3), input_shape=(224, 224, 3), padding='same', activation='relu'),
+      Conv2D(64, (3, 3), input_shape=(256, 256, 3), padding='same', activation='relu'),
       Conv2D(64, (3, 3), activation='relu', padding='same'),
       MaxPooling2D(pool_size=(2, 2), strides=(2, 2)),
       #Dropout(0.2),
@@ -120,4 +120,4 @@ import sys
 if len(sys.argv)==7:
     train(*sys.argv[1:])
 else:
-    print('train_dir', 'val_dir', 'categories_num', 'lr', 'epoches', 'model_name')
+    print('train_dir', 'val_dir', 'categories_num', 'lr', 'epoch', 'model_name')
