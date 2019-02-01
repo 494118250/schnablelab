@@ -827,8 +827,74 @@ def bin(args):
         df2.to_csv(opts.logfile, sep='\t', index=False)
         print('Check {} for binning details.'.format(opts.logfile))
 
+def vcf2map(args):
+    """
+    %prog vcf2map input.vcf output.matrix
+
+    convert vcf format to genotype matrix format
+    """
+    p = OptionParser(vcf2map.__doc__)
+    p.add_option("-i", "--input", help=SUPPRESS_HELP)
+    p.add_option("-o", "--output", help=SUPPRESS_HELP)
+    p.add_option('--homo1', default="A",
+                help='character for homozygous genotype')
+    p.add_option("--homo2", default='B',
+                help="character for alternative homozygous genotype")
+    p.add_option('--hete', default='X',
+                help='character for heterozygous genotype')
+    p.add_option('--missing', default='-',
+                help='character for missing value')
+    p.add_option("--logfile", default='GC.vcf2map.info',
+                help="specify the log file")
+    opts, args = p.parse_args(args)
+    if len(args) != 2:
+        sys.exit(not p.print_help())
+
+    invcf, outmap = args
+    inputvcf = opts.input or invcf
+    outputmatrix = opts.output or outmap
+    
+    if Path(outputmatrix).exists():
+        eprint("ERROR: Filename collision. The future output file `{}` exists".format(outputmatrix))
+        sys.exit(1)
+
+    logging.basicConfig(filename=opts.logfile, 
+        level=logging.DEBUG,
+        format="%(asctime)s:%(levelname)s:%(message)s")
 
 
+    import vcf
+    parse_gt={'0|0':opts.homo1, '0/0':opts.homo1,
+    '0|1':opts.hete,'1|0':opts.hete,
+    '0/1':opts.hete,'1/0':opts.hete,
+    '1|1':opts.homo2,'1/1':opts.homo2,
+    '.|.':opts.missing,'./.':opts.missing}
+
+    vcffile = open(inputvcf)
+    myvcf = vcf.Reader(vcffile)
+    samples = myvcf.samples # samples list in this vcf file
+    sam_num = len(samples)
+    print('Total %s samples: %s'%(sam_num, samples))
+    with open(outputmatrix, 'w') as mapfile:
+        firstline = 'chr\tpos\t' + '\t'.join(samples)+'\n'
+        mapfile.write(firstline)
+        for i in myvcf:
+            gtline = []
+            chrom = i.CHROM
+            pos = str(i.POS)
+            gtline.append(chrom)
+            gtline.append(pos)
+            for j in i.samples:
+                gt = j['GT']
+                try:
+                    mask_gt = parse_gt[gt]
+                except KeyError:
+                    logging.debug('unknown genotyeps in {}-{}, omit this line...'.format(chrom, pos))
+                    continue
+                gtline.append(mask_gt) 
+            mapfile.write('\t'.join(gtline)+'\n')
+    vcffile.close()
+    print('Done!')
 
 def main():
     actions = (
@@ -839,6 +905,7 @@ def main():
         ('bin', 'merge consecutive markers with same genotypes'),
         ('cleanup', 'clean redundant info in the tmp matirx file'),
         ('format', 'convert genotype matix file to other formats for the genetic map construction'),
+        ('vcf2map', 'convert vcf to genotype matrix file'),
             )
     p = ActionDispatcher(actions)
     p.dispatch(globals())
