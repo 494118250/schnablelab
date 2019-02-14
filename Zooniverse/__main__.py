@@ -1,8 +1,4 @@
 # -*- coding: UTF-8 -*-
-"""
-Build CNN, etc.
-"""
-
 from schnablelab.apps.base import dmain
 
 if __name__ == '__main__':
