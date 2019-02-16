@@ -862,37 +862,38 @@ def vcf2map(args):
         level=logging.DEBUG,
         format="%(asctime)s:%(levelname)s:%(message)s")
 
-
-    import vcf
-    parse_gt={'0|0':opts.homo1, '0/0':opts.homo1,
+    right_gt={'0|0':opts.homo1, '0/0':opts.homo1,
     '0|1':opts.hete,'1|0':opts.hete,
     '0/1':opts.hete,'1/0':opts.hete,
     '1|1':opts.homo2,'1/1':opts.homo2,
-    '.|.':opts.missing,'./.':opts.missing}
-
+    '.|.':opts.missing,'./.':opts.missing, '.':opts.missing}
+    useless_cols = ['ID', 'REF', 'ALT','QUAL', 'FILTER','INFO','FORMAT']
+    index_cols = ['#CHROM', 'POS']
     vcffile = open(inputvcf)
-    myvcf = vcf.Reader(vcffile)
-    samples = myvcf.samples # samples list in this vcf file
-    sam_num = len(samples)
-    print('Total %s samples: %s'%(sam_num, samples))
-    with open(outputmatrix, 'w') as mapfile:
-        firstline = 'chr\tpos\t' + '\t'.join(samples)+'\n'
-        mapfile.write(firstline)
-        for i in myvcf:
-            gtline = []
-            chrom = i.CHROM
-            pos = str(i.POS)
-            gtline.append(chrom)
-            gtline.append(pos)
-            for j in i.samples:
-                gt = j['GT']
-                try:
-                    mask_gt = parse_gt[gt]
-                except KeyError:
-                    logging.debug('unknown genotyeps in {}-{}, omit this line...'.format(chrom, pos))
-                    continue
-                gtline.append(mask_gt) 
-            mapfile.write('\t'.join(gtline)+'\n')
+    n = 0
+    for i in vcffile:
+        if i.startswith('##'):
+            n += 1
+        else:
+            break
+    vcffile.close()
+    chr_order, chr_nums = getChunk(inputvcf, ignore=n+1)
+    vcf_reader = pd.read_csv(inputvcf, header=n, delim_whitespace=True, usecols=lambda x: x not in useless_cols, iterator=True)
+    tmp_chr_list = []
+    for chrom in chr_order:
+        logging.debug('{}...'.format(chrom))
+        print('{}...'.format(chrom))
+        chunk = chr_nums[chrom]
+        df_chr_tmp = vcf_reader.get_chunk(chunk)
+        df_chr_tmp = df_chr_tmp.set_index(index_cols)
+        df_chr_tmp = df_chr_tmp.applymap(lambda x: x.split(':')[0])
+        df_chr_tmp = df_chr_tmp.applymap(lambda x: right_gt[x] if x in right_gt else np.nan)
+        df_chr_tmp.dropna(inplace=True)
+        tmp_chr_list.append(df_chr_tmp)
+    df1 = pd.concat(tmp_chr_list)
+    df1.to_csv(outputmatrix, sep='\t', index=True)
+
+
     vcffile.close()
     print('Done!')
 

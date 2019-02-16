@@ -154,11 +154,13 @@ def ConciseVcf(fn):
     df = df.replace(['0/0', '0/1', '1/0', '1/1', './.'], [0, 1, 1, 2, 9])
     return df
 
-def getChunk(fn):
+def getChunk(fn, ignore=1):
+    '''ignore: rows starts with pound sign'''
     df0_chr = defaultdict(int)
     chr_order = []
     with open(fn) as f:
-        f.readline()
+        for dash_line in range(ignore):
+            f.readline()
         for i in f:
             j = i.split()[0].split('-')[0]
             df0_chr[j] += 1
