@@ -250,7 +250,7 @@ def genKinship(args):
     Calculate kinship matrix file
     """
     p = OptionParser(genKinship.__doc__)
-    p.add_option('--type', default=1, choices=(1, 2),
+    p.add_option('--type', default='1', choices=('1', '2'),
                  help='specify the way to calculate the relateness, 1: centered; 2: standardized')
     p.set_slurm_opts(jn=True)
     opts, args = p.parse_args(args)

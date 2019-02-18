@@ -83,24 +83,31 @@ def Imgs2ArrsBatch(args):
 
 def Predict(args):
     """
-    %prog model_name npy_pattern('CM*.npy') range(start-end, hcc jobs style)
+    %prog model_name npy_pattern('CM*.npy')
     using your trained model to make predictions on selected npy files.
     The pred_data is a numpy array object which has the same number of columns as the training data.
     """
     from keras.models import load_model
     import scipy.misc as sm
     p = OptionParser(Predict.__doc__)
+    p.add_option('--range', default='all',
+        help = "specify the range of the testing images, hcc job range style")
+    p.add_option('--opf', default='infer',
+        help = "specify the prefix of the output file names")
     opts, args = p.parse_args(args)
-    if len(args) == 0:
+    if len(args) != 2:
         sys.exit(not p.print_help())
-    model, npy_pattern,jobrange, = args
-    start = int(jobrange.split('-')[0])
-    end = int(jobrange.split('-')[1])
-    
-    npys = glob(npy_pattern)[start:end]
-    print('there are %s npys need to predicted.'%len(npys))
+    model, npy_pattern = args
+    opf = model.split('/')[-1].split('.')[0] if opts.opf == 'infer' else opts.opf
+
+    npys = glob(npy_pattern)
+    if opts.range != 'all':
+        start = int(opts.range.split('-')[0])
+        end = int(opts.range.split('-')[1])
+        npys = npys[start:end]
+    print('%s npys will be predicted this time.'%len(npys))
+
     my_model = load_model(model)
-    
     for npy in npys:
         print(npy)
         test_npy = np.load(npy)
@@ -116,7 +123,7 @@ def Predict(args):
         df3 = df.replace(0, 255).replace(1, 127).replace(2, 134).replace(3, 212) 
         arr = np.stack([df1.values, df2.values, df3.values], axis=2)
         opt = npy.split('/')[-1].split('.npy')[0]+'.prd'
-        sm.imsave('%s.png'%opt, arr)
+        sm.imsave('%s.%s.png'%(opf,opt), arr)
         print('Done!')
 
 def PredictSlurmCPU(args):

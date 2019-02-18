@@ -320,7 +320,7 @@ def correct(args):
                     corrected_obj = CorrectOO(cargs, correct_obj.corrected)
                     corrected_n_new = get_corrected_num(seq_no_idx_num, corrected_obj.corrected)
                     round_n += 1
-                    if (corrected_n_new - corrected_n)/float(corrected_n) <= 0.01:
+                    if (corrected_n_new - corrected_n)/float(corrected_n+0.01) <= 0.01:
                         break
                     else:
                         corrected_n = corrected_n_new
@@ -458,11 +458,9 @@ def qc_sd(args):
         obsum = ob0 + ob2
         exp0, exp2 = (obsum*0.75, obsum*0.25) if opts.population == 'BCFn' else (obsum*0.5, obsum*0.5)
         df_chi = pd.DataFrame(dict(zip(['ob0', 'ob2', 'exp0', 'exp2'], [ob0, ob2, exp0, exp2])))
-        min5_cond = (df_chi['ob0']>5) & (df_chi['ob2']>5)
-        df_chi_min5 = df_chi[min5_cond]
-        df_chi_min5['pvalues'] = chisquare([df_chi_min5['ob0'], df_chi_min5['ob2']], [df_chi_min5['exp0'], df_chi_min5['exp2']]).pvalue
-        sig_cond = df_chi_min5['pvalues'] >= opts.sig_cutoff
-        good_snp = df_chr_tmp.loc[df_chi_min5[sig_cond].index, :]
+        min_cond = ((df_chi['ob0']>5) & (df_chi['ob2']>5)).values
+        pval_cond = chisquare([df_chi['ob0'], df_chi['ob2']], [df_chi['exp0'], df_chi['exp2']]).pvalue >= opts.sig_cutoff
+        good_snp = df_chr_tmp.loc[(min_cond & pval_cond), :]
         Good_SNPs.append(good_snp)
     df1 = pd.concat(Good_SNPs)
     before_snp_num = sum(chr_nums.values())
