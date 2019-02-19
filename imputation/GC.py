@@ -805,13 +805,15 @@ def bin(args):
         print('{}...'.format(chrom))
         chunk = chr_nums[chrom]
         df_chr_tmp = map_reader.get_chunk(chunk)
-        represent_idx, block_idx, results = bin_markers(df_chr_tmp.loc[chrom], diff=opts.diff_num, missing_value=opts.missing)
-        good_snp = df_chr_tmp.loc[(chrom, results), :]
-        Good_SNPs.append(good_snp)
-        if represent_idx:
-            df_binning_info = pd.DataFrame(dict(zip(['chr', 'representative_marker', 'markers'], [chrom, represent_idx, block_idx])))
-            binning_info.append(df_binning_info)
-
+        if df_chr_tmp.shape[0] == 1:
+            Good_SNPs.append(df_chr_tmp)
+        else:
+            represent_idx, block_idx, results = bin_markers(df_chr_tmp.loc[chrom], diff=opts.diff_num, missing_value=opts.missing)
+            good_snp = df_chr_tmp.loc[(chrom, results), :]
+            Good_SNPs.append(good_snp)
+            if represent_idx:
+                df_binning_info = pd.DataFrame(dict(zip(['chr', 'representative_marker', 'markers'], [chrom, represent_idx, block_idx])))
+                binning_info.append(df_binning_info)
     df1 = pd.concat(Good_SNPs)
     df1.to_csv(outputmatrix, sep='\t', index=True)
     before_snp_num = sum(chr_nums.values())
