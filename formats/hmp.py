@@ -39,7 +39,7 @@ class hmp:
             wf1.write(newline)
             chrom, pos = j[2], j[3]
             wf2.write('{rs},{pos},{chromosome}\n'.format(rs, pos, chrom))
-
+"""
     def to_numeric_col(self):
         self.GD = self.prefix + '.GD'
         self.GM = self.prefix + '.GM'
@@ -49,19 +49,4 @@ class hmp:
         self.GD = self.prefix + '.GD'
         self.GM = self.prefix + '.GM'
         with open(self.fn) as rf, open(self.GD, 'w') as wf1, open(self.GM, 'w') as wf2:
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+"""
