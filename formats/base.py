@@ -23,9 +23,9 @@ def read_block(handle, signal):
         if header[:signal_len] != signal:
             continue
         found_signal = True
-        seq = [s.strip() for s in it.next()]
+        seq = [s.strip() for s in next(it)]
         yield header, seq
     if not found_signal:
         handle.seek(0)
-        seq = lsit(s.strip() for s in handle)
+        seq = list(s.strip() for s in handle)
         yield None, seq

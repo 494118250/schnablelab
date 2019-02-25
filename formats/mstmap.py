@@ -38,11 +38,26 @@ def mstmap2allmaps(args):
 
     if Path(outputallmp).exists():
         eprint('EROOR: Filename collision. The fugure output file `{}` exists'.format(outputallmp)) 
-    
+        sys.exit(1)
+
+    fout = open(outputallmp, 'w')
+    fout.write('Scaffold_ID\tScaffold_Position\tLG\tGenetic_Position\n')
     fp = open(inputmstmap)
     for header, seq in read_block(fp, "group "):
         lg_name = header.split()[-1]
-        print(lg_name)
+        seq = list(seq)
+        seq_len = len(seq)-5
+        if seq_len > opts.min_markers:        
+            for s in seq:
+                if s.strip() == '' or s[0] == ';':
+                    continue
+                marker, genetic_pos = s.split()
+                scaffold, pos = '_'.join(marker.split('_')[:-1]), marker.split('_')[-1]
+                fout.write('{}\t{}\t{}\t{}\n'.format(scaffold, pos, lg_name, genetic_pos))
+        print('markers in {} is less than {}, omit...'.format(lg_name, opts.min_markers))
+    fp.close()
+    fout.close()
+
 
 if __name__ == "__main__":
     main()
